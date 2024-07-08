@@ -21,7 +21,9 @@ using shiny modules.
 <!-- badges: start -->
 <!-- badges: end -->
 
-The goal of nlmixr2shiny is to ...
+The goal of nlmixr2shiny is to make an easy to use model library and also 
+allow exploration of initial model estimates to update them to 
+reasonable values.
 
 ## Installation
 
