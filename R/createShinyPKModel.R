@@ -16,7 +16,7 @@
 #' @param ntransit number of transit compartments (by default 3)
 #' @param linCmt boolean, is this going to use a linear compartment solution
 #'
-#' @return a PK model according to the specifications above (evaluated not function)
+#' @return a PK model according to the specifications above;  This will return a list of string
 #' @export
 #'
 #' @examples
@@ -35,12 +35,17 @@ createShinyPKModel <- function(absorption=c("IV/Infusion/Bolus",
                                              "Michealis-Menton"), 
                                ntransit=3,
                                linCmt=FALSE,
-                               lag=FALSE) {
+                               lag=FALSE,
+                               fdepot=FALSE, 
+                               returnUi=FALSE) {
   absorption <- match.arg(absorption)
   distribution <- match.arg(distribution)
   elimination <- match.arg(elimination)
   checkmate::assertIntegerish(ntransit, lower=1, any.missing=FALSE, len=1)
   checkmate::assertLogical(linCmt, any.missing = FALSE, len = 1)
+  checkmate::assertLogical(lag, any.missing = FALSE, len = 1)
+  checkmate::assertLogical(fdepot, any.missing = FALSE, len = 1)
+  checkmate::assertLogical(returnUi, any.missing = TRUE, len=1)
   ini <- rxode2::ini
   if (!linCmt) {
     .lib <- loadNamespace("nlmixr2lib")
@@ -51,11 +56,10 @@ createShinyPKModel <- function(absorption=c("IV/Infusion/Bolus",
     .f <- .f()
     .f <- nlmixr2lib::removeDepot(.f)
     if (absorption == "First Order") {
-      .f <- nlmixr2lib::addDepot(.f,lag = lag)
-      .f <- ini(.f, lfdepot=fix(1))
+      .f <- nlmixr2lib::addDepot(.f,lag = lag, fdepot=fdepot)
     } else {
       if (absorption == "Transit") {
-        .f <- nlmixr2lib::addDepot(.f, lag = FALSE)
+        .f <- nlmixr2lib::addDepot(.f, lag = FALSE, fdepot=fdepot)
         .f <- ini(.f, lfdepot=fix(1))
         .f <- nlmixr2lib::addTransit(.f, transit = ntransit)
       }
@@ -64,5 +68,8 @@ createShinyPKModel <- function(absorption=c("IV/Infusion/Bolus",
   } else {
     stop("not implented", call.=FALSE)
   }
-  .f
+  .f <- rxode2::rxUiDecompress(.f)
+  rm("description", envir=.f$meta)
+  if (returnUi) return(rxode2::rxUiCompress(.f))
+  deparse(.f$fun)
 }
