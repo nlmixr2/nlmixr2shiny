@@ -60,7 +60,6 @@ createShinyPKModel <- function(absorption=c("IV/Infusion/Bolus",
     } else {
       if (absorption == "Transit") {
         .f <- nlmixr2lib::addDepot(.f, lag = FALSE, fdepot=fdepot)
-        .f <- ini(.f, lfdepot=fix(1))
         .f <- nlmixr2lib::addTransit(.f, transit = ntransit)
       }
     }
