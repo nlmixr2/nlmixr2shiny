@@ -33,19 +33,11 @@ createShinyPKModel <- function(absorption=c("IV/Infusion/Bolus",
                                               "3 compartment"), 
                                elimination=c("linear",
                                              "Michealis-Menton"), 
-                               ntransit=3,
-                               linCmt=FALSE,
-                               lag=FALSE,
-                               fdepot=FALSE, 
-                               returnUi=FALSE) {
+                               ntransit=3) {
   absorption <- match.arg(absorption)
   distribution <- match.arg(distribution)
   elimination <- match.arg(elimination)
   checkmate::assertIntegerish(ntransit, lower=1, any.missing=FALSE, len=1)
-  checkmate::assertLogical(linCmt, any.missing = FALSE, len = 1)
-  checkmate::assertLogical(lag, any.missing = FALSE, len = 1)
-  checkmate::assertLogical(fdepot, any.missing = FALSE, len = 1)
-  checkmate::assertLogical(returnUi, any.missing = TRUE, len=1)
   ini <- rxode2::ini
   if (!linCmt) {
     .lib <- loadNamespace("nlmixr2lib")
@@ -54,21 +46,19 @@ createShinyPKModel <- function(absorption=c("IV/Infusion/Bolus",
                 "2 compartment"=nlmixr2lib::readModelDb("PK_2cmt_des"),
                 "3 compartment"=nlmixr2lib::readModelDb("PK_3cmt_des"))
     .f <- .f()
-    .f <- nlmixr2lib::removeDepot(.f)
     if (absorption == "First Order") {
       .f <- nlmixr2lib::addDepot(.f,lag = lag, fdepot=fdepot)
     } else {
       if (absorption == "Transit") {
-        .f <- nlmixr2lib::addDepot(.f, lag = FALSE, fdepot=fdepot)
         .f <- nlmixr2lib::addTransit(.f, transit = ntransit)
+      } else {
+        .f <- nlmixr2lib::removeDepot(.f)
       }
     }
-    
   } else {
     stop("not implented", call.=FALSE)
   }
   .f <- rxode2::rxUiDecompress(.f)
   rm("description", envir=.f$meta)
-  if (returnUi) return(rxode2::rxUiCompress(.f))
-  deparse(.f$fun)
+  rxode2::rxUiCompress(.f)
 }
