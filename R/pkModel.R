@@ -1,7 +1,7 @@
 
-library(shiny)
-library(bslib)
-library(shinydashboard)
+# library(shiny)
+# library(bslib)
+# library(shinydashboard)
 
 
 
@@ -50,43 +50,13 @@ pkServer <- function(id) {
   moduleServer(id, function(input, output, session) {
     observeEvent(input$submit, {
       output$final_summary <- renderPrint({
-        createShinyPKModel(
-          absorption = input$Absorption,
-          distribution = input$Distribution,
-          elimination = input$Elimination,
-          ntransit = input$ntransit,
-          #linCmt = input$linCmt,
-          lag = input$lag,
-          fdepot = input$fdepot,
-          returnUi = input$returnUi
-        )
+        rxode2::rxode2(readModelDb("PK_3cmt_des"))
       })
     })
   })
 }
 
 
-
-
-# PD Module
-pdUI <- function(id) {
-  ns <- NS(id)
-  tagList(
-    fluidRow(
-      column(12, h4("Model Not Yet Implemented"))
-    )
-  )
-}
-
-# PKPD Module
-pkpdUI <- function(id) {
-  ns <- NS(id)
-  tagList(
-    fluidRow(
-      column(12, h4("Model Not Yet Implemented"))
-    )
-  )
-}
 
 
 # main UI
@@ -96,8 +66,7 @@ ui <- dashboardPage(
   dashboardSidebar(
     sidebarMenu(
       menuItem("PK", tabName = "pk", icon = icon("flask")),
-      menuItem("PD", tabName = "pd", icon = icon("chart-line")),
-      menuItem("PKPD", tabName = "pkpd", icon = icon("project-diagram"))
+      menuItem("PD", tabName = "pd", icon = icon("chart-line"))
     )
   ),
   dashboardBody(
@@ -116,13 +85,11 @@ ui <- dashboardPage(
       ),
       tabItem(tabName = "pd",
               pdUI("pdModule")
-      ),
-      tabItem(tabName = "pkpd",
-              pkpdUI("pkpdModule")
+      )
       )
     )
   )
-)
+
 
 server <- function(input, output, session) {
   pkServer("pkModule")

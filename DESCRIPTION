@@ -12,9 +12,15 @@ RoxygenNote: 7.3.2
 Imports: 
     checkmate,
     lotri,
-    rxode2
+    rxode2,
+    shiny,
+    shinydashboard
 Depends: 
-    nlmixr2lib
+    nlmixr2lib,
+    nlmixr2,
+    shinyjs,
+    DT,
+    rhandsontable
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3

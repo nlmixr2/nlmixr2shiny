@@ -1,5 +1,5 @@
 #' This function creates a nlmixr2 model by specifying the absorption, distribution and elimination
-#' 
+#'
 #' In general this is used in shiny to create the base PK model
 #'
 #' @param absorption This specifies the absorption method and can be:
@@ -20,19 +20,19 @@
 #' @export
 #'
 #' @examples
-#' 
+#'
 #' # By defualt this creates a one comparmtent ODE model from the `nlmixr2lib` model library
 #' createShinyPKModel()
-#' 
+#'
 #' createShinyPKModel(absorption="First Order")
 createShinyPKModel <- function(absorption=c("IV/Infusion/Bolus",
                                             "First Order",
-                                            "Transit"), 
+                                            "Transit"),
                                distribution=c("1 compartment",
                                               "2 compartment",
-                                              "3 compartment"), 
+                                              "3 compartment"),
                                elimination=c("linear",
-                                             "Michealis-Menton"), 
+                                             "Michealis-Menton"),
                                ntransit=3) {
   absorption <- match.arg(absorption)
   distribution <- match.arg(distribution)
@@ -42,9 +42,9 @@ createShinyPKModel <- function(absorption=c("IV/Infusion/Bolus",
   if (!linCmt) {
     .lib <- loadNamespace("nlmixr2lib")
     .f <- switch(distribution,
-                "1 compartment"=nlmixr2lib::readModelDb("PK_1cmt_des"),
-                "2 compartment"=nlmixr2lib::readModelDb("PK_2cmt_des"),
-                "3 compartment"=nlmixr2lib::readModelDb("PK_3cmt_des"))
+                 "1 compartment"=nlmixr2lib::readModelDb("PK_1cmt_des"),
+                 "2 compartment"=nlmixr2lib::readModelDb("PK_2cmt_des"),
+                 "3 compartment"=nlmixr2lib::readModelDb("PK_3cmt_des"))
     .f <- .f()
     if (absorption == "First Order") {
       .f <- nlmixr2lib::addDepot(.f,lag = lag, fdepot=fdepot)
