@@ -3,12 +3,40 @@ PKph <- function(absorption_method,
                  elimination_method,
                  parameterization,
                  transit_compartment = NULL) {
+  parme <- ""
+  if(length(parameterization)==1){
+    if(distribution_model=="1 compartment" && length(distribution_model)==1){
+      parme <- switch(parameterization, "kel"='pkTrans("k")',
+                      "Cl/V"="",
+                      "alpha"='pkTrans("alpha")')
+    } else if(distribution_model=="2 compartment" && length(distribution_model)==1){
+      parme <- switch(parameterization, "kel"='pkTrans("k")',
+                      "Cl/Vss"='pkTrans("vss")',
+                      "Cl/V"="",
+                      "alpha"='pkTrans("alpha")',
+                      "aob"='pkTrans("aob")',
+                      "k21"='pkTrans("k21")'
+      )
+    } else if(distribution_model=="3 compartment" && length(distribution_model)==1){
+      parme <- switch(parameterization, "kel"='pkTrans("k")',
+                      "Cl/V"="",
+                      "alpha"='pkTrans("alpha")',
+                      "k21"='pkTrans("k21")'
+      )
+    }
+  }
+
+  print(distribution_model)
+
   cmt <- switch(distribution_model, "1 compartment"="readModelDb('PK_1cmt_des')",
                 "2 compartment"="readModelDb('PK_2cmt_des')",
                 "3 compartment"="readModelDb('PK_3cmt_des')")
+
+
+
   pkpipe <- character(0)
   pkpipe <- c(pkpipe, cmt)
-  parme <- ifelse(parameterization=="Cl/V", "",paste("pkTrans(","'",parameterization,"'",")",sep=""))
+  #parme <- ifelse(parameterization=="Cl/V", "",paste("pkTrans(","'",parameterization,"'",")",sep=""))
   pkpipe <- c(pkpipe, parme)
   Elim <- ifelse(elimination_method=="Linear","","convertMM()")
   pkpipe <- c(pkpipe, Elim)
@@ -41,9 +69,10 @@ PDph <- function(response_type=c("Direct/Immediate", "Indirect/Turnover", "Effec
                  baseline = c("baseline = 0","constant", "1-exp", "linear","exp"),
                  type_of_model = c("stimulation of input", "stimulation of output",
                                    "inhibition of input", "inhibition of output"),
-                 sigmoidicity =FALSE) {
+                 sigmoidicity =FALSE,
+                 par_bas = FALSE) {
   checkmate::assertLogical(sigmoidicity,any.missing = FALSE, len=1)
-  #checkmate::assertLogical(par_bas,any.missing = FALSE, len=1)
+  checkmate::assertLogical(par_bas,any.missing = FALSE, len=1)
   type_of_model <- match.arg(type_of_model)
   drug_action <- match.arg(drug_action)
   baseline <- match.arg(baseline)
@@ -91,6 +120,12 @@ PDph <- function(response_type=c("Direct/Immediate", "Indirect/Turnover", "Effec
   }
   pdpipe <- c(pdpipe, drAc)
 
+  if(par_bas==TRUE){
+    pdpipe <- c(pdpipe, "convertKinR0()")
+  } else if(par_bas==FALSE){
+    pdpipe <- c(pdpipe,"")
+  }
+
   pdpipe <- pdpipe[pdpipe!= ""]
   pdpipe <- paste(pdpipe, collapse = "|>\n\t")
   #pdmodel <- eval(str2lang(pdpipe))
@@ -104,7 +139,6 @@ jPh <- function(pkO,pdO){
   joined <- c(pkO,pdO)
   joined <- joined[joined!=""]
   joined <- paste(joined,collapse = "|>\n\t")
-  pipEnv$step1=NULL
   #pkpdmodel <- eval(str2lang(joined))
   return(joined)
 }
@@ -161,7 +195,7 @@ pkUI <- function(id) {
       ),
       fluidRow(
         column(12,
-               uiOutput(ns("parameter_bas_ui"))
+               uiOutput(ns("parameter_base_ui"))
         )
       )
     ),
@@ -192,6 +226,13 @@ pkServer <- function(id, results) {
       }
 
     })
+    output$parameter_base_ui <- renderUI({
+      if (length(input$response_type)==1 && input$response_type == "Indirect/Turnover") {
+        fluidRow(
+          column(12, checkboxInput(ns("par_bas"), label="parameterize baseline instead of kin", value = FALSE))
+        )
+      }
+    })
 
     output$third_dropdown_ui <- renderUI({
       if (input$response_type %in% c("Direct/Immediate", "Effect Compartment")) {
@@ -200,6 +241,7 @@ pkServer <- function(id, results) {
       } else if (input$response_type == "Indirect/Turnover") {
         selectInput(ns("drug_action"), "Drug Action",
                     choices = c("Emax", "Imax", "linear", "logarithmic", "quadratic"), selectize = FALSE, size = 5)
+
       }
     })
 
@@ -210,13 +252,7 @@ pkServer <- function(id, results) {
         )
       }
     })
-    output$parameter_base_ui <- renderUI({
-      if (length(input$response_type)==1 && input$response_type == "Indirect/Turnover") {
-        fluidRow(
-          column(12, checkboxInput(ns("par_bas"), "parameterize baseline instead of kin", value = FALSE))
-        )
-      }
-    })
+
     output$combined_output <- renderPrint({
       pk_values <- list(
         absorption_method = input$absorption_method,
@@ -246,37 +282,16 @@ pkServer <- function(id, results) {
       if (length(input$response_type)==1 && input$response_type =="Indirect/Turnover") {
         pd_values$par_bas <- input$par_bas
       }
-      if(input$pk_switch==FALSE){
-        pk_output <- ""
-      } else{
-        pk_output <- do.call(PKph, pk_values)
-      }
-      if(input$pd_switch==FALSE){
-        pd_output <- ""
-      } else {
-        pd_output <- do.call(PDph, pd_values)
-      }
 
-      if(input$pk_switch==FALSE && input$pd_switch==FALSE){
-        pkpdmod <- ""
-      } else {
-        pkpdmod <- jPh(pk_output,pd_output)
-      }
+      pk_output <- if (input$pk_switch) do.call(PKph, pk_values) else ""
+      pd_output <- if (input$pd_switch) do.call(PDph, pd_values) else ""
+      pkpdmod <- if (input$pk_switch || input$pd_switch) jPh(pk_output, pd_output) else ""
 
-      cat("PK Model:\n")
-      cat(pk_output, sep = "\n")
-      cat("\nPD Model:\n")
-      cat(pd_output, sep = "\n")
-      cat("\nPKPD Model:\n")
       results$pkpdpipe <- pkpdmod
-      if(input$pk_switch==FALSE && input$pd_switch==FALSE){
-        results$pkpdm <- list(state=character(0))
-      } else {
-        results$pkpdm <- eval(str2lang(pkpdmod))
-      }
 
-      print(pkpdmod)
-      #list(pkpdmod = pkpdmod)
+      cat("PK Model:\n", pk_output, sep = "\n")
+      cat("\nPD Model:\n", pd_output, sep = "\n")
+      cat("\nPKPD Model:\n", pkpdmod, sep = "\n")
     })
   })
 }
