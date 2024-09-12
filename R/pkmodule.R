@@ -1,148 +1,3 @@
-PKph <- function(absorption_method,
-                 distribution_model,
-                 elimination_method,
-                 parameterization,
-                 transit_compartment = NULL) {
-  parme <- ""
-  if(length(parameterization)==1){
-    if(distribution_model=="1 compartment" && length(distribution_model)==1){
-      parme <- switch(parameterization, "kel"='pkTrans("k")',
-                      "Cl/V"="",
-                      "alpha"='pkTrans("alpha")')
-    } else if(distribution_model=="2 compartment" && length(distribution_model)==1){
-      parme <- switch(parameterization, "kel"='pkTrans("k")',
-                      "Cl/Vss"='pkTrans("vss")',
-                      "Cl/V"="",
-                      "alpha"='pkTrans("alpha")',
-                      "aob"='pkTrans("aob")',
-                      "k21"='pkTrans("k21")'
-      )
-    } else if(distribution_model=="3 compartment" && length(distribution_model)==1){
-      parme <- switch(parameterization, "kel"='pkTrans("k")',
-                      "Cl/V"="",
-                      "alpha"='pkTrans("alpha")',
-                      "k21"='pkTrans("k21")'
-      )
-    }
-  }
-
-  print(distribution_model)
-
-  cmt <- switch(distribution_model, "1 compartment"="readModelDb('PK_1cmt_des')",
-                "2 compartment"="readModelDb('PK_2cmt_des')",
-                "3 compartment"="readModelDb('PK_3cmt_des')")
-
-
-
-  pkpipe <- character(0)
-  pkpipe <- c(pkpipe, cmt)
-  #parme <- ifelse(parameterization=="Cl/V", "",paste("pkTrans(","'",parameterization,"'",")",sep=""))
-  pkpipe <- c(pkpipe, parme)
-  Elim <- ifelse(elimination_method=="Linear","","convertMM()")
-  pkpipe <- c(pkpipe, Elim)
-
-  if(absorption_method=="Transit"){
-
-    tran <- paste("addTransit(",transit_compartment,")",sep="")
-  } else if(absorption_method=="First Order"){
-    tran <- ""
-  }else if(absorption_method=="IV/Infusion/Bolus"){
-
-    tran <- "removeDepot()"
-  } else{
-    tran <- "addWeibullAbs()"
-  }
-  pkpipe <- c(pkpipe, tran)
-
-  pkpipe <- pkpipe[pkpipe != ""]
-  pkpipe <- paste(pkpipe, collapse="|>\n\t")
-
-  #model <- eval(str2lang(pkpipe))
-
-  return(pkpipe)
-}
-
-
-
-PDph <- function(response_type=c("Direct/Immediate", "Indirect/Turnover", "Effect Compartment"),
-                 drug_action = c("Emax", "Imax", "linear", "logarithmic", "quadratic"),
-                 baseline = c("baseline = 0","constant", "1-exp", "linear","exp"),
-                 type_of_model = c("stimulation of input", "stimulation of output",
-                                   "inhibition of input", "inhibition of output"),
-                 sigmoidicity =FALSE,
-                 par_bas = FALSE) {
-  checkmate::assertLogical(sigmoidicity,any.missing = FALSE, len=1)
-  checkmate::assertLogical(par_bas,any.missing = FALSE, len=1)
-  type_of_model <- match.arg(type_of_model)
-  drug_action <- match.arg(drug_action)
-  baseline <- match.arg(baseline)
-  pdpipe <- character(0)
-  if(response_type == "Direct/Immediate"){
-    resp <- "addDirectLin()"
-  } else if(response_type == "Effect Compartment"){
-    resp <- "addEffectCmtLin()"
-  }else if (response_type == "Indirect/Turnover" && type_of_model == "stimulation of input"){
-    resp <- 'addIndirectLin(stim="in")'
-  }else if(response_type == "Indirect/Turnover" && type_of_model == "stimulation of output"){
-    resp <- 'addIndirectLin(stim="out")'
-  }else if(response_type == "Indirect/Turnover" && type_of_model == "inhibition of input"){
-    resp <- 'addIndirectLin(inhib="in")'
-  }else if(response_type == "Indirect/Turnover" && type_of_model == "inhibition of output"){
-    resp <- 'addIndirectLin(inhib="out")'
-  }
-
-  pdpipe <- c(pdpipe,resp)
-
-  basel <- switch (baseline,
-                   "Baseline=0" = "",
-                   "constant" = "addBaselineConst()",
-                   "1-exp" = "addBaseline1exp()",
-                   "linear" = "addBaselineLin()",
-                   "exp" = "addBaselineExp()"
-  )
-
-  pdpipe <- c(pdpipe, basel)
-
-  if(drug_action=="linear"){
-    drAc <- ""
-  }else if(drug_action=="Emax" && sigmoidicity==TRUE){
-    drAc <- "convertEmaxHill()"
-  }else if(drug_action=="Emax" && sigmoidicity==FALSE){
-    drAc <- "convertEmax()"
-  }else if(drug_action=="Imax" && sigmoidicity==TRUE){
-    drAc <- 'convertEmaxHill(emax="Imax", ec50="IC50")'
-  }else if(drug_action=="Imax" && sigmoidicity==FALSE){
-    drAc <- 'convertEmax(emax="Imax", ec50="IC50")'
-  }else if(drug_action=="logarithmic"){
-    drAc <- 'convertLogLin()'
-  }else if(drug_action=="quadratic"){
-    drAc <- 'convertQuad()'
-  }
-  pdpipe <- c(pdpipe, drAc)
-
-  if(par_bas==TRUE){
-    pdpipe <- c(pdpipe, "convertKinR0()")
-  } else if(par_bas==FALSE){
-    pdpipe <- c(pdpipe,"")
-  }
-
-  pdpipe <- pdpipe[pdpipe!= ""]
-  pdpipe <- paste(pdpipe, collapse = "|>\n\t")
-  #pdmodel <- eval(str2lang(pdpipe))
-  return(pdpipe)
-}
-
-
-jPh <- function(pkO,pdO){
-  assertthat::is.string(pkO)
-  assertthat::is.string(pdO)
-  joined <- c(pkO,pdO)
-  joined <- joined[joined!=""]
-  joined <- paste(joined,collapse = "|>\n\t")
-  #pkpdmodel <- eval(str2lang(joined))
-  return(joined)
-}
-
 
 pkUI <- function(id) {
   ns <- NS(id)
@@ -253,46 +108,59 @@ pkServer <- function(id, results) {
       }
     })
 
-    output$combined_output <- renderPrint({
-      pk_values <- list(
-        absorption_method = input$absorption_method,
-        distribution_model = input$distribution_model,
-        elimination_method = input$elimination_method,
-        parameterization = input$parameterization
-      )
+
+    # observeEvent(input$distribution_model,{
+    #   results$distribution_model <- input$distribution_model
+    # })
+    # observeEvent(input$response_type,{
+    #   results$response_type <- input$response_type
+    # })
+    # observeEvent(input$response_type,{
+    #   results$response_type <- input$response_type
+    # })
+
+
+
+    observe({
+      results$absorption_method <- input$absorption_method
+      results$distribution_model <- input$distribution_model
+      results$elimination_method <- input$elimination_method
+      results$parameterization <- input$parameterization
+      results$pk_switch <- input$pk_switch
 
       if (input$absorption_method == "Transit") {
-        pk_values$transit_compartment <- input$transit_compartment
-      }
+        results$transit_compartment <- input$transit_compartment
+       }
 
-      pd_values <- list(
-        response_type = input$response_type,
-        drug_action = input$drug_action
-      )
+      results$response_type <- input$response_type
+      results$drug_action <- input$drug_action
 
-      if (input$response_type %in% c("Direct/Immediate", "Effect Compartment")) {
-        pd_values$baseline <- input$baseline
-      } else if (input$response_type == "Indirect/Turnover") {
-        pd_values$type_of_model <- input$type_of_model
-      }
+       if (input$response_type %in% c("Direct/Immediate", "Effect Compartment")) {
+        results$baseline <- input$baseline
 
-      if (length(input$drug_action)==1 && input$drug_action %in% c("Emax", "Imax")) {
-        pd_values$sigmoidicity <- input$sigmoidicity
-      }
-      if (length(input$response_type)==1 && input$response_type =="Indirect/Turnover") {
-        pd_values$par_bas <- input$par_bas
-      }
+         } else if (input$response_type == "Indirect/Turnover") {
+        results$type_of_model <- input$type_of_model
+       }
 
-      pk_output <- if (input$pk_switch) do.call(PKph, pk_values) else ""
-      pd_output <- if (input$pd_switch) do.call(PDph, pd_values) else ""
-      pkpdmod <- if (input$pk_switch || input$pd_switch) jPh(pk_output, pd_output) else ""
+       if (!is.null(input$drug_action) && input$drug_action %in% c("Emax", "Imax")) {
+        results$sigmoidicity <- input$sigmoidicity
+       }
 
-      results$pkpdpipe <- pkpdmod
-
-      cat("PK Model:\n", pk_output, sep = "\n")
-      cat("\nPD Model:\n", pd_output, sep = "\n")
-      cat("\nPKPD Model:\n", pkpdmod, sep = "\n")
+       if (input$response_type == "Indirect/Turnover") {
+        results$par_bas <- input$par_bas
+       }
     })
+
+
+
+
+    # output$combined_output <- renderPrint({
+
+
+      # cat("PK Model:\n", pk_output, sep = "\n")
+      # cat("\nPD Model:\n", pd_output, sep = "\n")
+      # cat("\nPKPD Model:\n", pkpdmod, sep = "\n")
+    # })
   })
 }
 
