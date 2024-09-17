@@ -20,11 +20,14 @@ pipeAllProp <- function(df){
 }
 
 
+
+
+
 pkprUI <- function(id) {
   ns <- NS(id)
   tagList(
     useShinyjs(),
-    titlePanel("nlmixr2shiny"),
+    titlePanel("Add model Properties"),
     mainPanel(
       fluidRow(
         column(1, actionButton(ns("add_row"), label = HTML("&nbsp;"), icon = icon("plus")),
@@ -53,13 +56,13 @@ pkprServer <- function(id, results) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
-
     # Table data to track compartment-property combinations
     table_data <- reactiveVal(data.frame(Compartment = character(0), Property = character(0), stringsAsFactors = FALSE))
 
-    # Update pipeline output
+    # Update pipeline output and store it in results
     updatePipeOutput <- function() {
-      results$modProp <- pipeAllProp(table_data())
+      results$modProp <- pipeAllProp(table_data())  # Update modProp in results
+      results$pkpdpipe <- paste(c(results$pkpdpipe, results$modProp), collapse = "|>\n\t")  # Concatenate with pkpdpipe
     }
 
     # Compartment selection UI
@@ -88,6 +91,7 @@ pkprServer <- function(id, results) {
         updatePipeOutput()  # Update pipeline output when a row is added
       }
     })
+
     output$table_output <- renderDT({
       td <- table_data()
       if (inherits(td, "data.frame") && nrow(td) > 0) {
@@ -111,9 +115,12 @@ pkprServer <- function(id, results) {
       datatable(td, escape = FALSE, selection = 'none', rownames = FALSE,
                 options = list(dom = 't', ordering = FALSE, paging = FALSE))
     })
+
     output$pipe <- renderText({
-      paste(c(results$pkpdpipe, results$modProp), collapse = "|>\n\t")
+      results$pkpdpipe  # Display concatenated pipeline from results
     })
+
+    # Handle row deletion
     observeEvent(input$table_output_cell_clicked, {
       info <- input$table_output_cell_clicked
       if (!is.null(info$value) && grepl("delete", info$value)) {
@@ -124,3 +131,5 @@ pkprServer <- function(id, results) {
     })
   })
 }
+
+
