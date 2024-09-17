@@ -1,26 +1,30 @@
-Package: nlmixr2shiny
-Title: What the Package Does (One Line, Title Case)
-Version: 0.0.0.9000
-Authors@R: 
-    person("Emmanuel", "Adewuyi", , "olex.taiwo@gmail.com", role = c("aut"),
-           comment = c(ORCID = "0000-0002-7920-6866"))
-Description: What the package does (one paragraph).
-License: MIT + file LICENSE
+Package: shinyMixR2
+Type: Package
+Title: Shiny Interface for nlmixr2 Modeling and Simulation
+Version: 0.1.0
+Author: Emmanuel Taiwo Adewuyi
+Maintainer: Emmanuel Taiwo Adewuyi <olex.taiwo@gmail.com.com>
+Description: A Shiny-based user interface for nlmixr2, allowing users to 
+    build, visualize, and simulate pharmacokinetic and pharmacodynamic 
+    (PK/PD) models interactively. This package simplifies model specification, 
+    parameter estimation, and result visualization through a web-based 
+    interface. It integrates tools from nlmixr2, nlmixr2lib, and rxode2 with 
+    enhanced user interactivity using Shiny, shinyjs, and waiter for smooth 
+    UI experience.
+License: GPL-3
 Encoding: UTF-8
-Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
-Imports: 
-    checkmate,
-    lotri,
-    rxode2,
-    shiny,
-    shinydashboard
+LazyData: true
 Depends: 
-    nlmixr2lib,
-    nlmixr2,
-    shinyjs,
-    DT,
-    rhandsontable
-Suggests: 
-    testthat (>= 3.0.0)
-Config/testthat/edition: 3
+  nlmixr2, 
+  nlmixr2lib, 
+  rxode2, 
+  shiny,
+  shinydashboard,
+  shinyjs,
+  waiter,
+  shinyWidgets,
+  DT,
+  rhandsontable
+Imports:
+
+  

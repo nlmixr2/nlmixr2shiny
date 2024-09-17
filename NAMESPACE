@@ -3,7 +3,6 @@
 export(ini)
 export(lotri)
 export(model)
-export(runModLib)
 import(shiny)
 import(shinydashboard)
 importFrom(lotri,lotri)
