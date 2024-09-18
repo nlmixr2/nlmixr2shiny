@@ -131,21 +131,21 @@ generateChangeMessages <- function(df, modDF) {
   if (nrow(df) == 0) {
     return(character(0))
   }
-
-  vapply(seq_len(nrow(df)), function(i) {
+  
+  paste(vapply(seq_len(nrow(df)), function(i) {
     rowNumber <- df$Row[i]
     pipen <- character(0)
     changedColumns <- df$ChangedColumns[i]
-
+    
     columnList <- unlist(strsplit(as.character(changedColumns), split = ",\\s*"))
     columnString <- paste(columnList, collapse = ", ")
-
+    
     # Handle changes in 'Trans.'
     if ("Trans." %in% columnList) {
       transValue <- modDF$Trans.[rowNumber]
       lhs <- modDF$lhs[rowNumber]
       name <- modDF$name[rowNumber]
-
+      
       if (transValue %in% c("", "Normal", "Untransformed")) {
         pipen <- c(pipen, paste0("model(", lhs, "=", name, ")"))
       } else if (transValue %in% c("exp", "LogNormal")) {
@@ -156,7 +156,7 @@ generateChangeMessages <- function(df, modDF) {
         pipen <- c(pipen, paste0("model(", lhs, "=probitInv(", name, ",", modDF$Trans.Lower[rowNumber], ",", modDF$Trans.Upper[rowNumber], "))"))
       }
     }
-
+    
     # Handle changes in 'est' or 'Trans.' for Fixed=FALSE
     if (("est" %in% columnList || "Trans." %in% columnList) && modDF$fix[rowNumber] == FALSE) {
       transValue <- modDF$Trans.[rowNumber]
@@ -164,7 +164,7 @@ generateChangeMessages <- function(df, modDF) {
       lower <- modDF$lower[rowNumber]
       est <- modDF$est[rowNumber]
       upper <- modDF$upper[rowNumber]
-
+      
       if (transValue %in% c("", "Normal", "Untransformed")) {
         pipen <- c(pipen, paste0("ini(", name, "=c(", lower, ",", est, ",", upper, "))"))
       } else if (transValue %in% c("exp", "LogNormal")) {
@@ -179,7 +179,7 @@ generateChangeMessages <- function(df, modDF) {
                                  "probit(", upper, ",", modDF$Trans.Lower[rowNumber], ",", modDF$Trans.Upper[rowNumber], ")))"))
       }
     }
-
+    
     # Handle changes in 'est' or 'Trans.' for Fixed=TRUE
     if (("est" %in% columnList || "Trans." %in% columnList) && modDF$fix[rowNumber] == TRUE) {
       transValue <- modDF$Trans.[rowNumber]
@@ -187,7 +187,7 @@ generateChangeMessages <- function(df, modDF) {
       lower <- modDF$lower[rowNumber]
       est <- modDF$est[rowNumber]
       upper <- modDF$upper[rowNumber]
-
+      
       if (transValue %in% c("", "Normal", "Untransformed")) {
         pipen <- c(pipen, paste0("ini(", name, "=fix(", lower, ",", est, ",", upper, "))"))
       } else if (transValue %in% c("exp", "LogNormal")) {
@@ -202,99 +202,24 @@ generateChangeMessages <- function(df, modDF) {
                                  "probit(", upper, ",", modDF$Trans.Lower[rowNumber], ",", modDF$Trans.Upper[rowNumber], ")))"))
       }
     }
-
-
+    
+    # Handle changes in 'fix' column
+    if ("fix" %in% columnList) {
+      lhs <- modDF$lhs[rowNumber]
+      pipen <- c(pipen, paste0("ini(", lhs, "=fix)"))
+    }
+    
     if ("Eta" %in% columnList) {
       pipen <- c(pipen, paste0("addEta('", modDF$name[rowNumber], "')"))
     }
-
-    pipen <- pipen[pipen != ""]
-
+    
+    pipen <- pipen[pipen != ""]  # Remove empty strings
     paste(pipen, collapse = "|>\n\t")
-  }, character(1))
+  }, character(1)), collapse = '|>\n\t')
 }
 
 
 
-# ParEstUI <- function(id) {
-#   ns <- NS(id)
-#   tagList(
-#     h3("Parameter Estimate"),
-#     rHandsontableOutput(ns("initalEstimates")),
-#     h3("Modified Rows"),
-#     rHandsontableOutput(ns("changedEstimates")),
-#     h3("Changes within Rows"),
-#     tableOutput(ns("rowChanges"))
-#   )
-# }
-#
-# ParEstServer <- function(id, results) {
-#   moduleServer(id, function(input, output, session) {
-#     ns <- session$ns
-#     changedDf <- reactiveVal(NULL)
-#     rowChanges <- reactiveVal(NULL)
-#     parEstDF <- reactiveVal(NULL)
-#
-#     observeEvent(results$pkpdpipe, {
-#       req(results$pkpdpipe)
-#       df <- getRhandsontable(eval(str2lang(results$pkpdpipe))) |>
-#         transformDF()
-#       df$Eta <- rep("No Variability", nrow(df))
-#       results$parEst <- df
-#       parEstDF(df)
-#
-#       output$initalEstimates <- renderRHandsontable({
-#         rhandsontable(df[!is.na(df$lhs), ]) %>%
-#           hot_col("Trans.", type = "dropdown", source = c("exp", "expit", "probitInv", ""), allowInvalid = TRUE) %>%
-#           hot_col("Eta", type = "dropdown", source = c("Between subject variabilities", "No Variability"), allowInvalid = TRUE) %>%
-#           hot_col("lower", type = "numeric", allowInvalid = TRUE) %>%
-#           hot_col("upper", type = "numeric", allowInvalid = TRUE)
-#       })
-#     })
-#
-#     observeEvent(input$initalEstimates, {
-#       req(input$initalEstimates)
-#       modifiedDf <- hot_to_r(input$initalEstimates)
-#
-#       if (!all(dim(parEstDF()) == dim(modifiedDf))) {
-#         modifiedDf <- modifiedDf[1:nrow(parEstDF()), names(parEstDF())]
-#       }
-#
-#       # Track changed rows
-#       changedDf(trackChanges(parEstDF(), modifiedDf))
-#
-#       # Track detailed changes within rows
-#       rowChanges(trackChangesWithinRow(parEstDF(), modifiedDf))
-#     })
-#
-#     output$changedEstimates <- renderRHandsontable({
-#       req(changedDf())
-#       rhandsontable(changedDf())
-#     })
-#
-#     output$rowChanges <- renderTable({
-#       req(rowChanges())
-#       # Format row changes into a readable format
-#       changes <- rowChanges()
-#       changedRows <- which(sapply(changes, any)) # Only display rows that have changes
-#
-#
-#       data.frame(
-#         Row = changedRows,
-#         ChangedColumns = sapply(changes[changedRows], function(cols) {
-#           paste(names(parEstDF())[which(cols)], collapse = ", ") # Use column names instead of numbers
-#         })
-#       )
-#     }) %>% generateChangeMessages()
-#
-#
-#
-#     return(list(
-#       changedDf = changedDf,
-#       rowChanges = rowChanges
-#     ))
-#   })
-# }
 
 
 
@@ -313,117 +238,6 @@ ParEstUI <- function(id) {
   )
 }
 
-
-# ParEstServer <- function(id, results) {
-#   moduleServer(id, function(input, output, session) {
-#     ns <- session$ns
-#     changedDf <- reactiveVal(NULL)
-#     rowChanges <- reactiveVal(NULL)
-#     parEstDF <- reactiveVal(NULL)
-#     changeMessages <- reactiveVal(NULL)
-#     pipen <- reactiveVal(NULL)
-#
-#     # Observe the pkpdpipe from the previous module and initialize parEstDF
-#     observeEvent(results$pkpdpipe, {
-#       req(results$pkpdpipe)
-#
-#
-#       # Evaluate the pkpdpipe from the previous module and transform the resulting dataframe
-#       df <- getRhandsontable(eval(str2lang(results$pkpdpipe))) |>
-#         transformDF()
-#
-#       # Add Eta column to the dataframe
-#       df$Eta <- rep("No Variability", nrow(df))
-#
-#       # Store the result in results$parEst and initialize the reactive parEstDF
-#       results$parEst <- df
-#       parEstDF(df)
-#
-#       # Render the initial estimates table
-#       output$initalEstimates <- renderRHandsontable({
-#         rhandsontable(df[!is.na(df$lhs), ]) %>%
-#           hot_col("Trans.", type = "dropdown", source = c("exp", "expit", "probitInv", ""), allowInvalid = TRUE) %>%
-#           hot_col("Eta", type = "dropdown", source = c("Between subject variabilities", "No Variability"), allowInvalid = TRUE) %>%
-#           hot_col("lower", type = "numeric", allowInvalid = TRUE) %>%
-#           hot_col("upper", type = "numeric", allowInvalid = TRUE)
-#       })
-#     })
-#
-#     # Observe any changes made to the initial estimates table
-#     observeEvent(input$initalEstimates, {
-#       req(input$initalEstimates)
-#
-#       # Convert the table back to a dataframe
-#       modifiedDf <- hot_to_r(input$initalEstimates)
-#
-#       # Ensure dimensions match between parEstDF and modifiedDf
-#       if (!all(dim(parEstDF()) == dim(modifiedDf))) {
-#         modifiedDf <- modifiedDf[1:nrow(parEstDF()), names(parEstDF())]
-#       }
-#
-#       # Track changes in the dataframe and store them in changedDf
-#       changedDf(trackChanges(parEstDF(), modifiedDf))
-#
-#       # Track detailed changes within rows and store them in rowChanges
-#       rowChanges(trackChangesWithinRow(parEstDF(), modifiedDf))
-#
-#       # Generate change messages and store them in changeMessages
-#       changedRowsDf <- data.frame(
-#         Row = which(sapply(rowChanges(), any)),
-#         ChangedColumns = sapply(rowChanges()[which(sapply(rowChanges(), any))], function(cols) {
-#           paste(names(parEstDF())[which(cols)], collapse = ", ")
-#         })
-#       )
-#       pipenCode <-changeMessages(generateChangeMessages(changedRowsDf, modifiedDf))
-#
-#       # # Generate the new pipeline "pipen" based on the modified estimates
-#       #  generatePipenCode(modifiedDf)  # Function to generate new pipeline code
-#       pipen(pipenCode)
-#
-#       # Concatenate the new "pipen" to the existing "pkpdpipe"
-#       results$pkpdpipe <- paste(c(results$pkpdpipe, pipen()), collapse = "|>\n\t")
-#     })
-#
-#     # Render the table with the changed estimates
-#     output$changedEstimates <- renderRHandsontable({
-#       req(changedDf())
-#       rhandsontable(changedDf())
-#     })
-#
-#     # Render the row changes in a table
-#     output$rowChanges <- renderTable({
-#       req(rowChanges())
-#       changes <- rowChanges()
-#       changedRows <- which(sapply(changes, any))  # Only display rows that have changes
-#
-#       data.frame(
-#         Row = changedRows,
-#         ChangedColumns = sapply(changes[changedRows], function(cols) {
-#           paste(names(parEstDF())[which(cols)], collapse = ", ")  # Display column names of changes
-#         })
-#       )
-#     })
-#
-#     # Render the change messages as text output
-#     output$changeMessages <- renderText({
-#       req(changeMessages())
-#       paste(changeMessages(), collapse = "\n")  # Each message on a new line
-#     })
-#
-#     # Return the values that can be used in the next module if needed
-#     return(list(
-#       changedDf = changedDf,
-#       rowChanges = rowChanges,
-#       changeMessages = changeMessages,
-#       pipen = pipen
-#     ))
-#   })
-# }
-
-
-
-
-
 ParEstServer <- function(id, results) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
@@ -431,40 +245,40 @@ ParEstServer <- function(id, results) {
     rowChanges <- reactiveVal(NULL)
     parEstDF <- reactiveVal(NULL)
     changeMessages <- reactiveVal(NULL)
-
+    
     observeEvent(results$pkpdpipe, {
       req(results$pkpdpipe)
       df <- getRhandsontable(eval(str2lang(results$pkpdpipe))) |>
         transformDF()
       df$Eta <- rep("No Variability", nrow(df))
-
+      
       results$parEst <- df
       parEstDF(df)
-
+      
       output$initalEstimates <- renderRHandsontable({
         rhandsontable(df[!is.na(df$lhs), ]) %>%
-          hot_col("Trans.", type = "dropdown", source = c("exp", "expit", "probitInv", ""), allowInvalid = TRUE) %>%
+          hot_col("Trans.", type = "dropdown", source = c("LogNormal", "LogitNormal", "ProbitNormal", "Normal"), allowInvalid = TRUE) %>%
           hot_col("Eta", type = "dropdown", source = c("Between subject variabilities", "No Variability"), allowInvalid = TRUE) %>%
           hot_col("lower", type = "numeric", allowInvalid = TRUE) %>%
           hot_col("upper", type = "numeric", allowInvalid = TRUE)
       })
     })
-
+    
     observeEvent(input$initalEstimates, {
       req(input$initalEstimates)
       modifiedDf <- hot_to_r(input$initalEstimates)
-
+      
       if (!all(dim(parEstDF()) == dim(modifiedDf))) {
         modifiedDf <- modifiedDf[1:nrow(parEstDF()), names(parEstDF())]
       }
       results$parEst <- df
-
+      
       # Track changed rows
       changedDf(trackChanges(parEstDF(), modifiedDf))
-
+      
       # Track detailed changes within rows
       rowChanges(trackChangesWithinRow(parEstDF(), modifiedDf))
-
+      
       # Generate change messages
       changedRowsDf <- data.frame(
         Row = which(sapply(rowChanges(), any)),
@@ -472,22 +286,22 @@ ParEstServer <- function(id, results) {
           paste(names(parEstDF())[which(cols)], collapse = ", ")
         })
       )
-
+      
       # Update change messages using the generateChangeMessages function
       changeMessages(generateChangeMessages(changedRowsDf,modifiedDf))
     })
-
+    
     output$changedEstimates <- renderRHandsontable({
       req(changedDf())
       rhandsontable(changedDf())
     })
-
+    
     output$rowChanges <- renderTable({
       req(rowChanges())
       # Format row changes into a readable format
       changes <- rowChanges()
       changedRows <- which(sapply(changes, any)) # Only display rows that have changes
-
+      
       data.frame(
         Row = changedRows,
         ChangedColumns = sapply(changes[changedRows], function(cols) {
@@ -495,13 +309,13 @@ ParEstServer <- function(id, results) {
         })
       )
     })
-
+    
     # Render the change messages as text
     output$changeMessages <- renderText({
       req(changeMessages())
       paste(changeMessages(), collapse = "\n")  # Display each message on a new line
     })
-
+    
     return(list(
       changedDf = changedDf,
       rowChanges = rowChanges,

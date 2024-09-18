@@ -55,7 +55,7 @@ genUi <- function() {
         
         
         waiter_show(html = tagList(
-          spin_fading_circles(),  # A nice spinning loading indicator
+          spin_fading_circles(),  
           h4("Calculating, please wait...")
         ))
         
@@ -119,6 +119,8 @@ genUi <- function() {
       }
     })
   }
+  
+  
   
   
   

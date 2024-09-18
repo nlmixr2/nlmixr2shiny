@@ -55,27 +55,27 @@ pkprUI <- function(id) {
 pkprServer <- function(id, results) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
-
+    
+    
     # Table data to track compartment-property combinations
     table_data <- reactiveVal(data.frame(Compartment = character(0), Property = character(0), stringsAsFactors = FALSE))
-
-    # Update pipeline output and store it in results
+    
+    # Update pipeline output
     updatePipeOutput <- function() {
-      results$modProp <- pipeAllProp(table_data())  # Update modProp in results
-      results$pkpdpipe <- paste(c(results$pkpdpipe, results$modProp), collapse = "|>\n\t")  # Concatenate with pkpdpipe
+      results$modProp <- pipeAllProp(table_data())
     }
-
+    
     # Compartment selection UI
     output$compartment_ui <- renderUI({
       req(results$pkpdm)  # Ensure pkpdm is available
       selectInput(ns("compartment"), "Compartment", choices = results$pkpdm$state, width = "300px", selectize = FALSE, size = 5)
     })
-
+    
     # Property selection UI
     output$property_ui <- renderUI({
       selectInput(ns("property"), "Property", choices = c("initial value", "bioavailability", "rate", "duration", "lag time"), width = "300px", selectize = FALSE, size = 5)
     })
-
+    
     # Adding rows to the table
     observeEvent(input$add_row, {
       new_row <- data.frame(Compartment = input$compartment, Property = input$property, stringsAsFactors = FALSE)
@@ -91,7 +91,6 @@ pkprServer <- function(id, results) {
         updatePipeOutput()  # Update pipeline output when a row is added
       }
     })
-
     output$table_output <- renderDT({
       td <- table_data()
       if (inherits(td, "data.frame") && nrow(td) > 0) {
@@ -115,12 +114,9 @@ pkprServer <- function(id, results) {
       datatable(td, escape = FALSE, selection = 'none', rownames = FALSE,
                 options = list(dom = 't', ordering = FALSE, paging = FALSE))
     })
-
     output$pipe <- renderText({
-      results$pkpdpipe  # Display concatenated pipeline from results
+      paste(c(results$pkpdpipe, results$modProp), collapse = "|>\n\t")
     })
-
-    # Handle row deletion
     observeEvent(input$table_output_cell_clicked, {
       info <- input$table_output_cell_clicked
       if (!is.null(info$value) && grepl("delete", info$value)) {
@@ -132,4 +128,14 @@ pkprServer <- function(id, results) {
   })
 }
 
-
+# t1 <- Sys.time()
+# readModelDb('PK_3cmt_des')|>
+#   pkTrans("k")|>
+#   convertMM()|>
+#   addTransit(14)|>
+#   addIni( depot )|>
+#   addIni( transit2 )|>
+#   addRate( transit2 )|>
+#   addLag( transit2 )|>
+#   addLag( transit4 )->f
+# Sys.time()-t1

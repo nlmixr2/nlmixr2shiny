@@ -7,11 +7,11 @@ reverseTransformRow <- function(row) {
   est <- as.numeric(row["est"])
   upper <- as.numeric(row["upper"])
 
-  if (trans == "Untransformed") {
+  if (trans == "Untransformed"|| trans == "") {
     return(c(lower, est, upper))
-  } else if (trans == "lognormal") {
+  } else if (trans == "LogNormal") {
     return(c(log(lower), log(est), log(upper)))
-  } else if (trans == "logitNormal") {
+  } else if (trans == "LogitNormal") {
     if (lower > transLower) {
       lower <- rxode2::logit(lower, transLower, transUpper)
     } else {
