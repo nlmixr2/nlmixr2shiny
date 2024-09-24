@@ -9,5 +9,7 @@ getRhandsontable <- function(ui){
   #mDF.trans <- transformDF(mDF)
   lhs <- .getVarLhs(.ui)
   mDF$lhs <- lhs[mDF$name]
+  
+  mDF <- mDF[order(mDF$lhs),]
   return(mDF)
 }

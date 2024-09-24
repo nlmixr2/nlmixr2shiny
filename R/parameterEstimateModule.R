@@ -9,6 +9,7 @@ trackChanges <- function(originalDf, modifiedDf) {
                                                function(j) {
                                                  original <- originalDf[i, j]
                                                  modified <- modifiedDf[i, j]
+                                                 
                                                  if (is.logical(original) && is.logical(modified)) {
                                                    ret <- original != modified
                                                    ff <- "logical"
@@ -22,8 +23,7 @@ trackChanges <- function(originalDf, modifiedDf) {
                                                    ret <- FALSE
                                                    ff <- paste(class(original), class(modified))
                                                  }
-                                                 print(data.frame(i=i, j=j,ret=ret,ff=ff, original=original, modified=modified))
-                                                 ret
+                                                
                                                }, logical(1))
                           any(rowChanged)
                         }, logical(1))
@@ -92,8 +92,8 @@ generateChangeMessages <- function(df, modDF) {
       lower <- ifelse(!is.na(modDF$lower[rowNumber]), modDF$lower[rowNumber], -Inf)
       est <- modDF$est[rowNumber]
       upper <- ifelse(!is.na(modDF$upper[rowNumber]), modDF$upper[rowNumber], Inf)
-      trUpper <- ifelse(!is.na(modDF$Trans.Upper[rowNumber]), modDF$Trans.Upper[rowNumber], 0)
-      trLower <- ifelse(!is.na(modDF$Trans.Lower[rowNumber]), modDF$Trans.Lower[rowNumber], 1)
+      trUpper <- ifelse(!is.na(modDF$Trans.Upper[rowNumber]), modDF$Trans.Upper[rowNumber], 1)
+      trLower <- ifelse(!is.na(modDF$Trans.Lower[rowNumber]), modDF$Trans.Lower[rowNumber], 0)
       
       if (transValue %in% c("", "Normal", "Untransformed")) {
         pipen <- c(pipen, paste0("model(", lhs, "=", name, ")"))
@@ -113,8 +113,8 @@ generateChangeMessages <- function(df, modDF) {
       lower <- ifelse(!is.na(modDF$lower[rowNumber]), modDF$lower[rowNumber], -Inf)
       est <- modDF$est[rowNumber]
       upper <- ifelse(!is.na(modDF$upper[rowNumber]), modDF$upper[rowNumber], Inf)
-      trUpper <- ifelse(!is.na(modDF$Trans.Upper[rowNumber]), modDF$Trans.Upper[rowNumber], 0)
-      trLower <- ifelse(!is.na(modDF$Trans.Lower[rowNumber]), modDF$Trans.Lower[rowNumber], 1)
+      trUpper <- ifelse(!is.na(modDF$Trans.Upper[rowNumber]), modDF$Trans.Upper[rowNumber], 1)
+      trLower <- ifelse(!is.na(modDF$Trans.Lower[rowNumber]), modDF$Trans.Lower[rowNumber], 0)
       
       if (transValue %in% c("", "Normal", "Untransformed")) {
         pipen <- c(pipen, paste0("ini(", name, "=c(", lower, ",", est, ",", upper, "))"))
@@ -138,8 +138,8 @@ generateChangeMessages <- function(df, modDF) {
       lower <- ifelse(!is.na(modDF$lower[rowNumber]), modDF$lower[rowNumber], -Inf)
       est <- modDF$est[rowNumber]
       upper <- ifelse(!is.na(modDF$upper[rowNumber]), modDF$upper[rowNumber], Inf)
-      trUpper <- ifelse(!is.na(modDF$Trans.Upper[rowNumber]), modDF$Trans.Upper[rowNumber], 0)
-      trLower <- ifelse(!is.na(modDF$Trans.Lower[rowNumber]), modDF$Trans.Lower[rowNumber], 1)
+      trUpper <- ifelse(!is.na(modDF$Trans.Upper[rowNumber]), modDF$Trans.Upper[rowNumber], 1)
+      trLower <- ifelse(!is.na(modDF$Trans.Lower[rowNumber]), modDF$Trans.Lower[rowNumber], 0)
       
       if (transValue %in% c("", "Normal", "Untransformed")) {
         pipen <- c(pipen, paste0("ini(", name, "=fix(", lower, ",", est, ",", upper, "))"))
@@ -193,93 +193,6 @@ ParEstUI <- function(id) {
   )
 }
 
-# ParEstServer <- function(id, results) {
-#   moduleServer(id, function(input, output, session) {
-#     ns <- session$ns
-#     changedDf <- reactiveVal(NULL)
-#     rowChanges <- reactiveVal(NULL)
-#     parEstDF <- reactiveVal(NULL)
-#     changeMessages <- reactiveVal(NULL)
-#     
-#     observeEvent(results$parEstim, {
-#       req(results$parEstim)
-#       df <- getRhandsontable(results$parEstim) |>
-#         transformDF()
-#       df$Eta <- rep("No Variability", nrow(df))
-#       
-#       #results$parEst <- df
-#       parEstDF(df)
-#       
-#       output$initalEstimates <- renderRHandsontable({
-#         rhandsontable(df[!is.na(df$lhs), ], rowHeaders = FALSE) %>%
-#           hot_col("Trans.", type = "dropdown", source = c("LogNormal", "LogitNormal", "ProbitNormal", "Normal"), allowInvalid = TRUE) %>%
-#           hot_col("Eta", type = "dropdown", source = c("Between subject variabilities", "No Variability"), allowInvalid = TRUE) %>%
-#           hot_col("lower", type = "numeric", allowInvalid = TRUE) %>%
-#           hot_col("upper", type = "numeric", allowInvalid = TRUE)
-#       })
-#     })
-#     
-#     observeEvent(input$initalEstimates, {
-#       req(input$initalEstimates)
-#       modifiedDf <- hot_to_r(input$initalEstimates)
-#       
-#       if (!all(dim(parEstDF()) == dim(modifiedDf))) {
-#         modifiedDf <- modifiedDf[1:nrow(parEstDF()), names(parEstDF())]
-#       }
-#       #results$parEst <- df
-#       
-#       # Track changed rows
-#       changedDf(trackChanges(parEstDF(), modifiedDf))
-#       
-#       # Track detailed changes within rows
-#       rowChanges(trackChangesWithinRow(parEstDF(), modifiedDf))
-#       
-#       # Generate change messages
-#       changedRowsDf <- data.frame(
-#         Row = which(sapply(rowChanges(), any)),
-#         ChangedColumns = sapply(rowChanges()[which(sapply(rowChanges(), any))], function(cols) {
-#           paste(names(parEstDF())[which(cols)], collapse = ", ")
-#         })
-#       )
-#       
-#       # Update change messages using the generateChangeMessages function
-#       changeMessages(generateChangeMessages(changedRowsDf,modifiedDf))
-#     })
-#     
-#     output$changedEstimates <- renderRHandsontable({
-#       req(changedDf())
-#       rhandsontable(changedDf())
-#     })
-#     
-#     output$rowChanges <- renderTable({
-#       req(rowChanges())
-#       # Format row changes into a readable format
-#       changes <- rowChanges()
-#       changedRows <- which(sapply(changes, any)) # Only display rows that have changes
-#       
-#       data.frame(
-#         Row = changedRows,
-#         ChangedColumns = sapply(changes[changedRows], function(cols) {
-#           paste(names(parEstDF())[which(cols)], collapse = ", ") # Use column names instead of numbers
-#         })
-#       )
-#     })
-#     
-#     # Render the change messages as text
-#     output$changeMessages <- renderText({
-#       req(changeMessages())
-#       paste(changeMessages(), collapse = "\n")  # Display each message on a new line
-#     })
-#     
-#     return(list(
-#       changedDf = changedDf,
-#       rowChanges = rowChanges,
-#       changeMessages = changeMessages
-#     ))
-#   })
-# }
-
-
 
 
 ParEstServer <- function(id, results) {
@@ -310,6 +223,8 @@ ParEstServer <- function(id, results) {
     observeEvent(input$initalEstimates, {
       req(input$initalEstimates)
       modifiedDf <- hot_to_r(input$initalEstimates)
+      
+      modifiedDf <- 
       
       if (!all(dim(parEstDF()) == dim(modifiedDf))) {
         modifiedDf <- modifiedDf[1:nrow(parEstDF()), names(parEstDF())]
