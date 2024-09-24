@@ -127,6 +127,7 @@ pkServer <- function(id, results) {
       results$elimination_method <- input$elimination_method
       results$parameterization <- input$parameterization
       results$pk_switch <- input$pk_switch
+      results$pd_switch <- input$pd_switch
 
       if (input$absorption_method == "Transit") {
         results$transit_compartment <- input$transit_compartment

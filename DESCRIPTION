@@ -24,7 +24,8 @@ Depends:
   waiter,
   shinyWidgets,
   DT,
-  rhandsontable
+  rhandsontable,
+  miniUI
 Imports:
 
   

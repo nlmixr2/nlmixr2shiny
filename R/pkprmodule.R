@@ -56,7 +56,6 @@ pkprServer <- function(id, results) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
-    
     # Table data to track compartment-property combinations
     table_data <- reactiveVal(data.frame(Compartment = character(0), Property = character(0), stringsAsFactors = FALSE))
     
@@ -91,6 +90,8 @@ pkprServer <- function(id, results) {
         updatePipeOutput()  # Update pipeline output when a row is added
       }
     })
+    
+    # Render data table
     output$table_output <- renderDT({
       td <- table_data()
       if (inherits(td, "data.frame") && nrow(td) > 0) {
@@ -114,9 +115,13 @@ pkprServer <- function(id, results) {
       datatable(td, escape = FALSE, selection = 'none', rownames = FALSE,
                 options = list(dom = 't', ordering = FALSE, paging = FALSE))
     })
+    
+    # Pipeline output
     output$pipe <- renderText({
       paste(c(results$pkpdpipe, results$modProp), collapse = "|>\n\t")
     })
+    
+    # Handling delete button click in the table
     observeEvent(input$table_output_cell_clicked, {
       info <- input$table_output_cell_clicked
       if (!is.null(info$value) && grepl("delete", info$value)) {
@@ -128,7 +133,8 @@ pkprServer <- function(id, results) {
   })
 }
 
-# t1 <- Sys.time()
+
+#  t1 <- Sys.time()
 # readModelDb('PK_3cmt_des')|>
 #   pkTrans("k")|>
 #   convertMM()|>
@@ -138,4 +144,10 @@ pkprServer <- function(id, results) {
 #   addRate( transit2 )|>
 #   addLag( transit2 )|>
 #   addLag( transit4 )->f
-# Sys.time()-t1
+# t1 <- Sys.time()
+# f|>addIni( depot )|>
+#   addIni( transit2 )
+#  Sys.time()-t1
+ 
+ 
+ 
