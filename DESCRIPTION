@@ -1,23 +1,23 @@
-Package: shinyMixR2
+Package: nlmixr2shiny
 Type: Package
 Title: Shiny Interface for nlmixr2 Modeling and Simulation
 Version: 0.1.0
 Author: Emmanuel Taiwo Adewuyi
 Maintainer: Emmanuel Taiwo Adewuyi <olex.taiwo@gmail.com.com>
-Description: A Shiny-based user interface for nlmixr2, allowing users to 
-    build, visualize, and simulate pharmacokinetic and pharmacodynamic 
-    (PK/PD) models interactively. This package simplifies model specification, 
-    parameter estimation, and result visualization through a web-based 
-    interface. It integrates tools from nlmixr2, nlmixr2lib, and rxode2 with 
-    enhanced user interactivity using Shiny, shinyjs, and waiter for smooth 
+Description: A Shiny-based user interface for nlmixr2, allowing users to
+    build, visualize, and simulate pharmacokinetic and pharmacodynamic
+    (PK/PD) models interactively. This package simplifies model specification,
+    parameter estimation, and result visualization through a web-based
+    interface. It integrates tools from nlmixr2, nlmixr2lib, and rxode2 with
+    enhanced user interactivity using Shiny, shinyjs, and waiter for smooth
     UI experience.
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
-Depends: 
-  nlmixr2, 
-  nlmixr2lib, 
-  rxode2, 
+Depends:
+  nlmixr2,
+  nlmixr2lib,
+  rxode2,
   shiny,
   shinydashboard,
   shinyjs,
@@ -27,5 +27,3 @@ Depends:
   rhandsontable,
   miniUI
 Imports:
-
-  
