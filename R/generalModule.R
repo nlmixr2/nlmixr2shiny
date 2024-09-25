@@ -36,8 +36,7 @@ genUi <- function() {
     # Navigation bar with the title and logo
     navbarPage(
       title = div(
-        img(src = "C:/Users/ADEWUEM2/Downloads/logonlmixr (1).png", class = "app-logo"),  # Add your logo here
-        "nlmixr2Shiny"
+        tags$img(src=paste0("data:image/png;base64,",xfun::base64_encode(system.file("logonlmixr.png", package = "nlmixr2shiny"))),height=40)
       ),
       id = "mainTabs",
       
@@ -145,5 +144,7 @@ genUi <- function() {
   }
   
   # Create the Shiny app
-  shinyApp(ui = ui, server = server)
+  #shinyApp(ui = ui, server = server)
+  shiny::runGadget(ui, server, viewer = shiny::dialogViewer("NLMixR2Shiny", width = 1200, height = 1200))
+  
 }

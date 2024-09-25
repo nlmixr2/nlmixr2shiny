@@ -67,7 +67,7 @@ covServer <- function(id, results) {
       req(updatedMatrixDF())  # Ensure the matrix has been updated
       
       # Generate the deparsed expression and store it in `results`
-      results$expressionOutput <- results$forCov$fun
+      results$expressionOutput <- paste(deparse(as.function(results$forCov)), collapse="\n")
     })
     
     # Update the text area with the content of results$expressionOutput
