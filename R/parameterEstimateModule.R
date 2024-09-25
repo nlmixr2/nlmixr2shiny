@@ -89,9 +89,9 @@ generateChangeMessages <- function(df, modDF) {
       lhs <- modDF$lhs[rowNumber]
       transValue <- modDF$Trans.[rowNumber]
       name <- modDF$name[rowNumber]
-      lower <- ifelse(!is.na(modDF$lower[rowNumber]), modDF$lower[rowNumber], -Inf)
+      lower <- ifelse(!is.na(modDF$lower[rowNumber])||modDF$lower[rowNumber]==0, modDF$lower[rowNumber], -Inf)
       est <- modDF$est[rowNumber]
-      upper <- ifelse(!is.na(modDF$upper[rowNumber]), modDF$upper[rowNumber], Inf)
+      upper <- ifelse(!is.na(modDF$upper[rowNumber])||modDF$upper[rowNumber]==0, modDF$upper[rowNumber], Inf)
       trUpper <- ifelse(!is.na(modDF$Trans.Upper[rowNumber]), modDF$Trans.Upper[rowNumber], 1)
       trLower <- ifelse(!is.na(modDF$Trans.Lower[rowNumber]), modDF$Trans.Lower[rowNumber], 0)
       
@@ -110,9 +110,9 @@ generateChangeMessages <- function(df, modDF) {
     if (("est" %in% columnList || "Trans." %in% columnList) && modDF$fix[rowNumber] == FALSE) {
       transValue <- modDF$Trans.[rowNumber]
       name <- modDF$name[rowNumber]
-      lower <- ifelse(!is.na(modDF$lower[rowNumber]), modDF$lower[rowNumber], -Inf)
+      lower <- ifelse(!is.na(modDF$lower[rowNumber])||modDF$lower[rowNumber]==0, modDF$lower[rowNumber], -Inf)
       est <- modDF$est[rowNumber]
-      upper <- ifelse(!is.na(modDF$upper[rowNumber]), modDF$upper[rowNumber], Inf)
+      upper <- ifelse(!is.na(modDF$upper[rowNumber])||modDF$upper[rowNumber]==0, modDF$upper[rowNumber], Inf)
       trUpper <- ifelse(!is.na(modDF$Trans.Upper[rowNumber]), modDF$Trans.Upper[rowNumber], 1)
       trLower <- ifelse(!is.na(modDF$Trans.Lower[rowNumber]), modDF$Trans.Lower[rowNumber], 0)
       
@@ -135,9 +135,9 @@ generateChangeMessages <- function(df, modDF) {
     if (("est" %in% columnList || "Trans." %in% columnList) && modDF$fix[rowNumber] == TRUE) {
       transValue <- modDF$Trans.[rowNumber]
       name <- modDF$name[rowNumber]
-      lower <- ifelse(!is.na(modDF$lower[rowNumber]), modDF$lower[rowNumber], -Inf)
+      lower <- ifelse(!is.na(modDF$lower[rowNumber])||modDF$lower[rowNumber]==0, modDF$lower[rowNumber], -Inf)
       est <- modDF$est[rowNumber]
-      upper <- ifelse(!is.na(modDF$upper[rowNumber]), modDF$upper[rowNumber], Inf)
+      upper <- ifelse(!is.na(modDF$upper[rowNumber])||modDF$upper[rowNumber]==0, modDF$upper[rowNumber], Inf)
       trUpper <- ifelse(!is.na(modDF$Trans.Upper[rowNumber]), modDF$Trans.Upper[rowNumber], 1)
       trLower <- ifelse(!is.na(modDF$Trans.Lower[rowNumber]), modDF$Trans.Lower[rowNumber], 0)
       

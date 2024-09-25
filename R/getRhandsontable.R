@@ -11,5 +11,6 @@ getRhandsontable <- function(ui){
   mDF$lhs <- lhs[mDF$name]
   
   mDF <- mDF[order(mDF$lhs),]
+  mDF <- mDF[, c("lhs", setdiff(names(mDF), "lhs"))]
   return(mDF)
 }
