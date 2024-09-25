@@ -1,71 +1,71 @@
 trackChanges <- function(originalDf, modifiedDf) {
+  # Check if data frames have the same dimensions
   if (!all(dim(originalDf) == dim(modifiedDf))) {
     stop("Data frames must have the same dimensions for comparison.")
   }
-
-  changedRows <- vapply(seq_len(nrow(originalDf)),
-                        function(i) {
-                          rowChanged <- vapply(seq_along(originalDf[i, ]),
-                                               function(j) {
-                                                 original <- originalDf[i, j]
-                                                 modified <- modifiedDf[i, j]
-                                                 
-                                                 if (is.logical(original) && is.logical(modified)) {
-                                                   ret <- original != modified
-                                                   ff <- "logical"
-                                                  } else if (is.character(original) && is.character(modified)) {
-                                                   ret <- original != modified
-                                                   ff <- "character"
-                                                 } else if (is.numeric(original) && is.numeric(modified)) {
-                                                   ret <- abs(original - modified) > 1e-4
-                                                   ff <- "numeric"
-                                                 } else {
-                                                   ret <- FALSE
-                                                   ff <- paste(class(original), class(modified))
-                                                 }
-                                                
-                                               }, logical(1))
-                          any(rowChanged)
-                        }, logical(1))
-
-  # Use the first column as the row identifier instead of row numbers
+  
+  # Detect rows that have any changes
+  changedRows <- vapply(seq_len(nrow(originalDf)), function(i) {
+    rowChanged <- vapply(seq_along(originalDf[i, ]), function(j) {
+      original <- originalDf[i, j]
+      modified <- modifiedDf[i, j]
+      
+      # Compare logical, character, and numeric values
+      if (is.logical(original) && is.logical(modified)) {
+        return(original != modified)
+      } else if (is.character(original) && is.character(modified)) {
+        return(original != modified)
+      } else if (is.numeric(original) && is.numeric(modified)) {
+        return(abs(original - modified) > 1e-4)
+      } else {
+        return(FALSE)  # Fallback for non-comparable types
+      }
+    }, logical(1))
+    
+    # If any column in the row has changed, mark the row as changed
+    any(rowChanged)
+  }, logical(1))
+  
+  # Use the first column as the row identifier (or row numbers)
   changedRowsNames <- originalDf[which(changedRows), 1, drop = FALSE]
-
-
-  # Return the rows that have changed with the first column value as the identifier
+  
+  # Return the rows that have changed using the first column as the identifier
   modifiedDf[which(changedRows), , drop = FALSE]
 }
 
-
 trackChangesWithinRow <- function(originalDf, modifiedDf) {
+  # Check if data frames have the same dimensions
   if (!all(dim(originalDf) == dim(modifiedDf))) {
     stop("Data frames must have the same dimensions for comparison.")
   }
-
+  
+  # Detect changes within each row for every column
   changedDetails <- lapply(seq_len(nrow(originalDf)), function(i) {
     vapply(seq_along(originalDf[i, ]), function(j) {
       original <- originalDf[i, j]
       modified <- modifiedDf[i, j]
-
+      
+      # Compare logical, character, and numeric values
       if (is.logical(original) && is.logical(modified)) {
-        original != modified
+        return(original != modified)
       } else if (is.character(original) && is.character(modified)) {
-        original != modified
+        return(original != modified)
       } else if (is.numeric(original) && is.numeric(modified)) {
-        abs(original - modified) > 1e-4
+        return(abs(original - modified) > 1e-4)
       } else {
-        FALSE
+        return(FALSE)  # Fallback for non-comparable types
       }
     }, logical(1))
   })
-
-  # Use the first column as the row identifier instead of row numbers
+  
+  # Set row identifiers as names for the list (use first column of originalDf)
   if (!is.null(originalDf[, 1])) {
-   names(changedDetails) <- originalDf[,1]
+    names(changedDetails) <- originalDf[, 1]
   } else {
     stop("The first column is missing or invalid.")
   }
-
+  
+  # Return a list of changes for each row with the first column as the row identifier
   changedDetails
 }
 
