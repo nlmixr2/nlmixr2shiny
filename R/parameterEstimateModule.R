@@ -179,6 +179,120 @@ generateChangeMessages <- function(df, modDF) {
 
 
 
+# ParEstUI <- function(id) {
+#   ns <- NS(id)
+#   tagList(
+#     h3("Parameter Estimate"),
+#     rHandsontableOutput(ns("initalEstimates")),
+#     h3("Modified Rows"),
+#     rHandsontableOutput(ns("changedEstimates")),
+#     # h3("Changes within Rows"),
+#     # tableOutput(ns("rowChanges")),
+#     # h3("Change Messages"),
+#     # textOutput(ns("changeMessages")),
+#     fluidRow(
+#       column(12, actionButton(ns("copy_code"), "Copy Model Code"))
+#     )
+#   )
+# }
+# 
+# 
+# 
+# ParEstServer <- function(id, results) {
+#   moduleServer(id, function(input, output, session) {
+#     ns <- session$ns
+#     changedDf <- reactiveVal(NULL)
+#     rowChanges <- reactiveVal(NULL)
+#     parEstDF <- reactiveVal(NULL)
+#     changeMessages <- reactiveVal(NULL)
+#     
+#     observeEvent(results$parEstim, {
+#       req(results$parEstim)
+#       df <- getRhandsontable(results$parEstim) |>
+#         transformDF()
+#       df$Eta <- rep("No Variability", nrow(df))
+#       
+#       parEstDF(df)
+#       
+#       output$initalEstimates <- renderRHandsontable({
+#         rhandsontable(df[!is.na(df$lhs), ], rowHeaders = FALSE) %>%
+#           hot_col("Trans.", type = "dropdown", source = c("LogNormal", "LogitNormal", "ProbitNormal", "Normal"), allowInvalid = TRUE) %>%
+#           hot_col("Eta", type = "dropdown", source = c("Between subject variabilities", "No Variability"), allowInvalid = TRUE) %>%
+#           hot_col("lower", type = "numeric", allowInvalid = TRUE) %>%
+#           hot_col("upper", type = "numeric", allowInvalid = TRUE)
+#       })
+#     })
+#     
+#     observeEvent(input$initalEstimates, {
+#       req(input$initalEstimates)
+#       modifiedDf <- hot_to_r(input$initalEstimates)
+#       
+#       modifiedDf <- 
+#       
+#       if (!all(dim(parEstDF()) == dim(modifiedDf))) {
+#         modifiedDf <- modifiedDf[1:nrow(parEstDF()), names(parEstDF())]
+#       }
+#       
+#       changedDf(trackChanges(parEstDF(), modifiedDf))
+#       rowChanges(trackChangesWithinRow(parEstDF(), modifiedDf))
+#       
+#       changedRowsDf <- data.frame(
+#         Row = which(sapply(rowChanges(), any)),
+#         ChangedColumns = sapply(rowChanges()[which(sapply(rowChanges(), any))], function(cols) {
+#           paste(names(parEstDF())[which(cols)], collapse = ", ")
+#         })
+#       )
+#       
+#       changeMessages(generateChangeMessages(changedRowsDf, modifiedDf))
+#       
+#       # Store the changeMessages in results$ParEstimates
+#       results$ParEstimates <- changeMessages()
+#     })
+#     
+#     output$changedEstimates <- renderRHandsontable({
+#       req(changedDf())
+#       rhandsontable(changedDf())
+#     })
+#     
+#     # output$rowChanges <- renderTable({
+#     #   req(rowChanges())
+#     #   changes <- rowChanges()
+#     #   changedRows <- which(sapply(changes, any))
+#     #   
+#     #   data.frame(
+#     #     Row = changedRows,
+#     #     ChangedColumns = sapply(changes[changedRows], function(cols) {
+#     #       paste(names(parEstDF())[which(cols)], collapse = ", ")
+#     #     })
+#     #   )
+#     # })
+#     
+#     # output$changeMessages <- renderText({
+#     #   req(changeMessages())
+#     #   paste(changeMessages(), collapse = "\n")
+#     # })
+#     
+#     return(list(
+#       changedDf = changedDf,
+#       rowChanges = rowChanges,
+#       changeMessages = changeMessages
+#     ))
+#     
+#     observeEvent(input$copy_code, {
+#       waiter_show(html = tagList(
+#         spin_fading_circles(),  # A nice spinning loading indicator
+#         h4("Calculating, please wait...")
+#       ))
+#       model_code <- paste(deparse(as.function(eval(str2lang(paste(c("results$parEstim", results$ParEstimates), collapse = "|>\n\t"))))), collapse="\n")
+#       rstudioapi::insertText(model_code)
+#       
+#       waiter_hide()
+#       stopApp()  
+#     })
+#   })
+# }
+
+
 ParEstUI <- function(id) {
   ns <- NS(id)
   tagList(
@@ -186,13 +300,11 @@ ParEstUI <- function(id) {
     rHandsontableOutput(ns("initalEstimates")),
     h3("Modified Rows"),
     rHandsontableOutput(ns("changedEstimates")),
-    h3("Changes within Rows"),
-    tableOutput(ns("rowChanges")),
-    h3("Change Messages"),
-    textOutput(ns("changeMessages"))  # Text output for the generated messages
+    fluidRow(
+      column(12, actionButton(ns("copy_code"), "Copy Model Code"))  # Added the copy code button
+    )
   )
 }
-
 
 
 ParEstServer <- function(id, results) {
@@ -224,8 +336,6 @@ ParEstServer <- function(id, results) {
       req(input$initalEstimates)
       modifiedDf <- hot_to_r(input$initalEstimates)
       
-      modifiedDf <- 
-      
       if (!all(dim(parEstDF()) == dim(modifiedDf))) {
         modifiedDf <- modifiedDf[1:nrow(parEstDF()), names(parEstDF())]
       }
@@ -251,30 +361,26 @@ ParEstServer <- function(id, results) {
       rhandsontable(changedDf())
     })
     
-    output$rowChanges <- renderTable({
-      req(rowChanges())
-      changes <- rowChanges()
-      changedRows <- which(sapply(changes, any))
+    # Copy model code button functionality
+    observeEvent(input$copy_code, {
+      # Show the waiter spinner while generating the code
+      waiter_show(html = tagList(
+        spin_fading_circles(),
+        h4("Calculating, please wait...")
+      ))
       
-      data.frame(
-        Row = changedRows,
-        ChangedColumns = sapply(changes[changedRows], function(cols) {
-          paste(names(parEstDF())[which(cols)], collapse = ", ")
-        })
+      # Create the model code from the pipeline of parameter estimates and changes
+      model_code <- paste(
+        deparse(as.function(eval(str2lang(paste(c("results$parEstim", results$ParEstimates), collapse = " |> \n\t"))))),
+        collapse = "\n"
       )
+      
+      # Paste the model code into the active R script
+      rstudioapi::insertText(model_code)
+      
+      # Hide the spinner and stop the app
+      waiter_hide()
+      stopApp()
     })
-    
-    output$changeMessages <- renderText({
-      req(changeMessages())
-      paste(changeMessages(), collapse = "\n")
-    })
-    
-    return(list(
-      changedDf = changedDf,
-      rowChanges = rowChanges,
-      changeMessages = changeMessages
-    ))
   })
 }
-
-

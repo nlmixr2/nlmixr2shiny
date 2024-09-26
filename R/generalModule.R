@@ -119,6 +119,12 @@ nlmixr2model <- function() {
   
   # Create the Shiny app
   #shinyApp(ui = ui, server = server)
-  shiny::runGadget(ui, server, viewer = shiny::dialogViewer("NLMixR2Shiny", width = 1200, height = 1200))
+  # shiny::runGadget(ui, server, viewer = shiny::dialogViewer("NLMixR2Shiny", window_title = "NLMixR2 Model",width = 1200, height = 1200))
+  shiny::runGadget(ui, server, viewer = shiny::dialogViewer(
+    dialogName = "NLMixR2Shiny",
+    width = 1200, 
+    height = 1200
+  ))
+  
   
 }

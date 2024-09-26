@@ -108,10 +108,12 @@ covUI <- function(id) {
     fluidRow(
       column(
         width = 12,
-        actionButton(ns("copyButton"), "Copy to Clipboard", icon = icon("clipboard")), # Copy button at the top
         rHandsontableOutput(ns("triangleTable")), # Covariance table below the button
         textAreaInput(ns("expressionOutput"), "Expression Output", "", rows = 5, width = "100%") # Text area for expression output
       )
+    ),
+    fluidRow(
+      column(12, actionButton(ns("copy_code"), "Copy Model Code"))  # Added the copy code button
     )
   )
 }
@@ -174,12 +176,20 @@ covServer <- function(id, results) {
     })
 
     # JavaScript to handle the copy-to-clipboard functionality
-    observeEvent(input$copyButton, {
+    observeEvent(input$copy_code, {
+      
+      waiter_show(html = tagList(
+        spin_fading_circles(),
+        h4("Calculating, please wait...")
+      ))
       session$sendCustomMessage(type = "copyToClipboard", message = list(text = input$expressionOutput))
 
       # Use rstudioapi's insertText to display the output in the RStudio console
       if (rstudioapi::isAvailable()) {
         rstudioapi::insertText(text = paste("mod1 <- ",results$expressionOutput))
+        
+        waiter_hide()
+        
         shiny::stopApp()
       }
     })
