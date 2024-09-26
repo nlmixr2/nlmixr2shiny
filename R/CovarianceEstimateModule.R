@@ -179,7 +179,8 @@ covServer <- function(id, results) {
 
       # Use rstudioapi's insertText to display the output in the RStudio console
       if (rstudioapi::isAvailable()) {
-        rstudioapi::insertText(text = paste("ui <- ",results$expressionOutput))
+        rstudioapi::insertText(text = paste("mod1 <- ",results$expressionOutput))
+        shiny::stopApp()
       }
     })
   })

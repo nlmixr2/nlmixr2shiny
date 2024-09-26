@@ -1,0 +1,6 @@
+Name: Build nlmixr2 model
+Description: Use nlmix2lib to build nlmixr2 model.
+Binding: nlmixr2model
+Interactive: true
+
+

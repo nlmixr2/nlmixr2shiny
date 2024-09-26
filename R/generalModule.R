@@ -9,8 +9,10 @@
 #' @import shinyWidgets
 #' @import rhandsontable
 #' @import DT
+#' @import nlmixr2lib
 #' @export 
 nlmixr2model <- function() {
+  library(nlmixr2lib)
   ui <- fluidPage(
     useShinyjs(),
     useWaiter(),

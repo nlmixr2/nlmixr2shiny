@@ -15,8 +15,10 @@ License: GPL-3
 Encoding: UTF-8
 LazyData: true
 Depends:
+  nlmixr2lib
+Imports:
+  rstudioapi,
   nlmixr2,
-  nlmixr2lib,
   rxode2,
   shiny,
   shinydashboard,
@@ -26,5 +28,4 @@ Depends:
   DT,
   rhandsontable,
   miniUI
-Imports:
 RoxygenNote: 7.3.2
