@@ -27,3 +27,4 @@ Depends:
   rhandsontable,
   miniUI
 Imports:
+RoxygenNote: 7.3.2

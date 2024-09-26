@@ -55,6 +55,8 @@ pkUI <- function(id) {
       )
     ),
     verbatimTextOutput(ns("combined_output"))
+    # actionButton(ns("show_code_btn"), "Show Model Code"),
+    # uiOutput(ns("code_output_ui")) 
   )
 }
 
@@ -109,17 +111,6 @@ pkServer <- function(id, results) {
     })
 
 
-    # observeEvent(input$distribution_model,{
-    #   results$distribution_model <- input$distribution_model
-    # })
-    # observeEvent(input$response_type,{
-    #   results$response_type <- input$response_type
-    # })
-    # observeEvent(input$response_type,{
-    #   results$response_type <- input$response_type
-    # })
-
-
 
     observe({
       results$absorption_method <- input$absorption_method
@@ -150,44 +141,38 @@ pkServer <- function(id, results) {
        if (input$response_type == "Indirect/Turnover") {
         results$par_bas <- input$par_bas
        }
+
+      # Retrieve stored PKPD inputs from results and process them
+      pk_values <- list(
+        absorption_method = results$absorption_method,
+        distribution_model = results$distribution_model,
+        elimination_method = results$elimination_method,
+        parameterization = results$parameterization
+      )
+      if (results$absorption_method == "Transit") {
+        pk_values$transit_compartment <- results$transit_compartment
+      }
+
+      pd_values <- list(
+        response_type = results$response_type,
+        drug_action = results$drug_action
+      )
+      if (results$response_type %in% c("Direct/Immediate", "Effect Compartment")) {
+        pd_values$baseline <- results$baseline
+      } else if (results$response_type == "Indirect/Turnover") {
+        pd_values$type_of_model <- results$type_of_model
+      }
+      if (length(results$drug_action) == 1 && results$drug_action %in% c("Emax", "Imax")) {
+        pd_values$sigmoidicity <- results$sigmoidicity
+      }
+
+      pk_output <- ifelse(results$pk_switch, do.call(PKph, pk_values), "")
+      pd_output <- ifelse(results$pd_switch, do.call(PDph, pd_values), "")
+      pkpdmod <- ifelse(results$pk_switch || results$pd_switch, jPh(pk_output, pd_output), "")
+      results$pkpdpipe <- pkpdmod
     })
 
-
-
-
-    # output$combined_output <- renderPrint({
-
-
-      # cat("PK Model:\n", pk_output, sep = "\n")
-      # cat("\nPD Model:\n", pd_output, sep = "\n")
-      # cat("\nPKPD Model:\n", pkpdmod, sep = "\n")
-    # })
   })
 }
-
-
-
-# pkServer <- function(id) {
-#   moduleServer(id, function(input, output, session) {
-#     ns <- session$ns
-#
-#     # Your existing code...
-#
-#     output$combined_output <- renderPrint({
-#       # Your existing code to create pk_output and pd_output...
-#
-#       pkpdmod <- jPh(pk_output, pd_output)
-#
-#       cat("PK Model:\n")
-#       cat(pk_output, sep = "\n")
-#       cat("\nPD Model:\n")
-#       cat(pd_output, sep = "\n")
-#       cat("\nPKPD Model:\n")
-#       print(pkpdmod)
-#
-#       # Return pkpdmod for use in pkprServer
-#       list(pkpdmod = pkpdmod)
-#     })
-#   })
-# }
+ 
 
