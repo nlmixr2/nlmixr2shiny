@@ -2,7 +2,7 @@
 % Please edit documentation in R/generalModule.R
 \name{nlmixr2model}
 \alias{nlmixr2model}
-\title{The genUI function}
+\title{The nlmixr2model function}
 \usage{
 nlmixr2model()
 }
