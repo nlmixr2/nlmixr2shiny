@@ -7,7 +7,7 @@
 createShinyPKModel(
   absorption = c("IV/Infusion/Bolus", "First Order", "Transit"),
   distribution = c("1 compartment", "2 compartment", "3 compartment"),
-  elimination = c("linear", "Michealis-Menton"),
+  elimination = c("linear", "Michaelis-Menten"),
   ntransit = 3
 )
 }
@@ -24,7 +24,7 @@ createShinyPKModel(
 
 \item{elimination}{the type of elimination of PK.  Currently supports:
 - linear
-- Michaelis Menton}
+- Michaelis-Menten}
 
 \item{ntransit}{number of transit compartments (by default 3)}
 

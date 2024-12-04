@@ -12,7 +12,7 @@
 #' - 3 compartment
 #' @param elimination the type of elimination of PK.  Currently supports:
 #' - linear
-#' - Michaelis Menton
+#' - Michaelis-Menten
 #' @param ntransit number of transit compartments (by default 3)
 #' @param linCmt boolean, is this going to use a linear compartment solution
 #'
@@ -32,7 +32,7 @@ createShinyPKModel <- function(absorption=c("IV/Infusion/Bolus",
                                               "2 compartment",
                                               "3 compartment"),
                                elimination=c("linear",
-                                             "Michealis-Menton"),
+                                             "Michaelis-Menten"),
                                ntransit=3) {
   absorption <- match.arg(absorption)
   distribution <- match.arg(distribution)

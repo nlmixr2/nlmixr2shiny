@@ -21,7 +21,7 @@ pkUI <- function(id) {
         ),
         column(3,
                selectInput(ns("elimination_method"), "Elimination Method",
-                           choices = c("Linear", "Michaelis-Menton"), selectize = FALSE, size = 2)
+                           choices = c("Linear", "Michaelis-Menten"), selectize = FALSE, size = 2)
         ),
         column(3,
                uiOutput(ns("parameterization_ui"))
@@ -56,7 +56,7 @@ pkUI <- function(id) {
     ),
     verbatimTextOutput(ns("combined_output"))
     # actionButton(ns("show_code_btn"), "Show Model Code"),
-    # uiOutput(ns("code_output_ui")) 
+    # uiOutput(ns("code_output_ui"))
   )
 }
 
@@ -174,5 +174,3 @@ pkServer <- function(id, results) {
 
   })
 }
- 
-
