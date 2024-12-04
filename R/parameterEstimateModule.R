@@ -176,9 +176,6 @@ generateChangeMessages <- function(df, modDF) {
 
 
 
-
-
-
 ParEstUI <- function(id) {
   ns <- NS(id)
   tagList(
@@ -186,13 +183,11 @@ ParEstUI <- function(id) {
     rHandsontableOutput(ns("initalEstimates")),
     h3("Modified Rows"),
     rHandsontableOutput(ns("changedEstimates")),
-    h3("Changes within Rows"),
-    tableOutput(ns("rowChanges")),
-    h3("Change Messages"),
-    textOutput(ns("changeMessages"))  # Text output for the generated messages
+    fluidRow(
+      column(12, actionButton(ns("copy_code"), "Copy Model Code"))  # Added the copy code button
+    )
   )
 }
-
 
 
 ParEstServer <- function(id, results) {
@@ -224,8 +219,6 @@ ParEstServer <- function(id, results) {
       req(input$initalEstimates)
       modifiedDf <- hot_to_r(input$initalEstimates)
       
-      modifiedDf <- 
-      
       if (!all(dim(parEstDF()) == dim(modifiedDf))) {
         modifiedDf <- modifiedDf[1:nrow(parEstDF()), names(parEstDF())]
       }
@@ -251,30 +244,26 @@ ParEstServer <- function(id, results) {
       rhandsontable(changedDf())
     })
     
-    output$rowChanges <- renderTable({
-      req(rowChanges())
-      changes <- rowChanges()
-      changedRows <- which(sapply(changes, any))
+    # Copy model code button functionality
+    observeEvent(input$copy_code, {
+      # Show the waiter spinner while generating the code
+      waiter_show(html = tagList(
+        spin_fading_circles(),
+        h4("Calculating, please wait...")
+      ))
       
-      data.frame(
-        Row = changedRows,
-        ChangedColumns = sapply(changes[changedRows], function(cols) {
-          paste(names(parEstDF())[which(cols)], collapse = ", ")
-        })
+      # Create the model code from the pipeline of parameter estimates and changes
+      model_code <- paste("mod1 <- ",
+        deparse(as.function(eval(str2lang(paste(c("results$parEstim", results$ParEstimates), collapse = " |> \n\t"))))),
+        collapse = "\n"
       )
+      
+      # Paste the model code into the active R script
+      rstudioapi::insertText(model_code)
+      
+      # Hide the spinner and stop the app
+      waiter_hide()
+      stopApp()
     })
-    
-    output$changeMessages <- renderText({
-      req(changeMessages())
-      paste(changeMessages(), collapse = "\n")
-    })
-    
-    return(list(
-      changedDf = changedDf,
-      rowChanges = rowChanges,
-      changeMessages = changeMessages
-    ))
   })
 }
-
-
