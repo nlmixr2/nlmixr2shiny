@@ -3,7 +3,7 @@ Type: Package
 Title: Shiny Interface for nlmixr2 Modeling and Simulation
 Version: 0.1.0
 Author: Emmanuel Taiwo Adewuyi
-Maintainer: Emmanuel Taiwo Adewuyi <olex.taiwo@gmail.com.com>
+Maintainer: Dyani Peterson <dyani1115@gmail.com> 
 Description: A Shiny-based user interface for nlmixr2, allowing users to
     build, visualize, and simulate pharmacokinetic and pharmacodynamic
     (PK/PD) models interactively. This package simplifies model specification,
