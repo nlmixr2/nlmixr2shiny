@@ -181,8 +181,6 @@ ParEstUI <- function(id) {
   tagList(
     h3("Parameter Estimate"),
     rHandsontableOutput(ns("initalEstimates")),
-    h3("Modified Rows"),
-    rHandsontableOutput(ns("changedEstimates")),
     fluidRow(
       column(12, actionButton(ns("copy_code"), "Copy Model Code"))  # Added the copy code button
     )
