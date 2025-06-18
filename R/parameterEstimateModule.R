@@ -94,7 +94,7 @@ generateChangeMessages <- function(df, modDF) {
       upper <- ifelse(!is.na(modDF$upper[rowNumber])||modDF$upper[rowNumber]==0, modDF$upper[rowNumber], Inf)
       trUpper <- ifelse(!is.na(modDF$Trans.Upper[rowNumber]), modDF$Trans.Upper[rowNumber], 1)
       trLower <- ifelse(!is.na(modDF$Trans.Lower[rowNumber]), modDF$Trans.Lower[rowNumber], 0)
-      
+
       if (transValue %in% c("", "Normal", "Untransformed")) {
         pipen <- c(pipen, paste0("model(", lhs, "=", name, ")"))
       } else if (transValue %in% c("exp", "LogNormal")) {
@@ -115,7 +115,14 @@ generateChangeMessages <- function(df, modDF) {
       upper <- ifelse(!is.na(modDF$upper[rowNumber])||modDF$upper[rowNumber]==0, modDF$upper[rowNumber], Inf)
       trUpper <- ifelse(!is.na(modDF$Trans.Upper[rowNumber]), modDF$Trans.Upper[rowNumber], 1)
       trLower <- ifelse(!is.na(modDF$Trans.Lower[rowNumber]), modDF$Trans.Lower[rowNumber], 0)
-      
+
+      if (is.na(upper)) {
+        upper <- Inf
+      }
+
+      if (is.na(lower)) {
+        lower <- -Inf
+      }
       if (transValue %in% c("", "Normal", "Untransformed")) {
         pipen <- c(pipen, paste0("ini(", name, "=c(", lower, ",", est, ",", upper, "))"))
       } else if (transValue %in% c("LogNormal")) {
@@ -181,6 +188,8 @@ ParEstUI <- function(id) {
   tagList(
     h3("Parameter Estimate"),
     rHandsontableOutput(ns("initalEstimates")),
+    # h3("Modified Rows"),
+    # rHandsontableOutput(ns("changedEstimates")),
     fluidRow(
       column(12, actionButton(ns("copy_code"), "Copy Model Code"))  # Added the copy code button
     )
