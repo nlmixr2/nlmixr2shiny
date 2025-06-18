@@ -99,10 +99,13 @@ generateChangeMessages <- function(df, modDF) {
         pipen <- c(pipen, paste0("model(", lhs, "=", name, ")"))
       } else if (transValue %in% c("exp", "LogNormal")) {
         pipen <- c(pipen, paste0("model(", lhs, "=exp(", name, "))"))
+        
       } else if (transValue %in% c("expit", "LogitNormal")) {
         pipen <- c(pipen, paste0("model(", lhs, "=expit(", name, ",", trLower, ",", trUpper, "))"))
+        
       } else if (transValue %in% c("probitInv", "ProbitNormal")) {
         pipen <- c(pipen, paste0("model(", lhs, "=probitInv(", name, ",", trLower, ",", trUpper, "))"))
+        
       }
     }
     
@@ -116,6 +119,13 @@ generateChangeMessages <- function(df, modDF) {
       trUpper <- ifelse(!is.na(modDF$Trans.Upper[rowNumber]), modDF$Trans.Upper[rowNumber], 1)
       trLower <- ifelse(!is.na(modDF$Trans.Lower[rowNumber]), modDF$Trans.Lower[rowNumber], 0)
       
+      if (is.na(upper)){
+        upper <- Inf
+      }
+      
+      if (is.na(lower)){
+        lower <- -Inf
+      }
       if (transValue %in% c("", "Normal", "Untransformed")) {
         pipen <- c(pipen, paste0("ini(", name, "=c(", lower, ",", est, ",", upper, "))"))
       } else if (transValue %in% c("LogNormal")) {
@@ -129,7 +139,8 @@ generateChangeMessages <- function(df, modDF) {
                                  "probit(", est, ",", trLower, ",", trUpper, "),",
                                  "probit(", upper, ",", trLower, ",", trUpper, ")))"))
       }
-    }
+    } 
+    
     
     # Handle changes in 'est' or 'Trans.' for Fixed=TRUE
     if (("est" %in% columnList || "Trans." %in% columnList) && modDF$fix[rowNumber] == TRUE) {
@@ -181,8 +192,8 @@ ParEstUI <- function(id) {
   tagList(
     h3("Parameter Estimate"),
     rHandsontableOutput(ns("initalEstimates")),
-    h3("Modified Rows"),
-    rHandsontableOutput(ns("changedEstimates")),
+    # h3("Modified Rows"),
+    # rHandsontableOutput(ns("changedEstimates")),
     fluidRow(
       column(12, actionButton(ns("copy_code"), "Copy Model Code"))  # Added the copy code button
     )
@@ -267,3 +278,5 @@ ParEstServer <- function(id, results) {
     })
   })
 }
+
+ 
