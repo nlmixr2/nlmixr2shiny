@@ -129,7 +129,8 @@ nlmixr2model <- function() {
       pkpdm = NULL,
       modProp = NULL,
       parEst = NULL,
-      covarianceMat = NULL
+      covarianceMat = NULL,
+      forCov = NULL # This is supposed to match calculations in 'calculatingStatisticalModel
     )
 
     # Call the respective server modules
