@@ -22,6 +22,7 @@ calculatingInitialModel <-function(results){
   }
 }
 
+
 #' This function is supposed to calculate the statistical model.
 #'
 #' @param results This Shiny list contains the results.
@@ -140,14 +141,10 @@ nlmixr2model <- function() {
     # Monitor active tab and update results based on the selected tab
     observeEvent(input$mainTabs, {
       tab <- input$mainTabs
-      
-      if (tab == "Model Property") {
-        
-      }
-       
+
 
       if (tab == "PKPD Model") {
-
+        results$parEst <- NULL
         results$modProp <- NULL
         results$pkpdm <- NULL
       } else if (tab == "Model Property") {
@@ -157,22 +154,25 @@ nlmixr2model <- function() {
         calculatingInitialModel(results) 
         calculatingParameterEstimate(results)
         results$ParaEstim <- NULL
-        
         req(results$pkpdm)
        
         waiter_hide()
       } else if (tab == "Statistical Model") {
         calculatingInitialModel(results) 
+
         calculatingStatisticalModel(results)
         results$forCov <- NULL
-     
-        req(results$parEstim)
+        req(results$forCov)
+
+         
        
-        waiter_hide()
+        
       }
     })
+
     
   }
+
 
   shiny::runGadget(ui, server, viewer = shiny::dialogViewer(
     dialogName = "NLMixR2Shiny",
