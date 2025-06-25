@@ -59,6 +59,17 @@ calculatingParameterEstimate <-function(results) {
   }
   
 }
+
+# Creating an Output for Expression (model code) to be shown in UI
+output$expressionOutput <- renderUI({
+  verbatimTextOutput("modelCode")
+})
+
+output$modelCode <- renderText({
+  req(results$forCov) # Ensure results$forCov is not NULL
+  # Here you place the calculated model code
+  paste(results$forCov, collapse = "\n") # Printing as text
+})
 #' The nlmixr2model function 
 #'
 #'
