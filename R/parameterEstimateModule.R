@@ -214,14 +214,13 @@ ParEstServer <- function(id, results) {
       req(results$parEstim)
       df <- getRhandsontable(results$parEstim) |>
         transformDF()
-      df$Eta <- rep("No Variability", nrow(df))
-      
+      df$Eta <- FALSE 
       parEstDF(df)
       
       output$initalEstimates <- renderRHandsontable({
         rhandsontable(df[!is.na(df$lhs), ], rowHeaders = FALSE) %>%
           hot_col("Trans.", type = "dropdown", source = c("LogNormal", "LogitNormal", "ProbitNormal", "Normal"), allowInvalid = TRUE) %>%
-          hot_col("Eta", type = "dropdown", source = c("Between subject variabilities", "No Variability"), allowInvalid = TRUE) %>%
+          hot_col("Eta", type = "checkbox") %>%
           hot_col("lower", type = "numeric", allowInvalid = TRUE) %>%
           hot_col("upper", type = "numeric", allowInvalid = TRUE)
       })
