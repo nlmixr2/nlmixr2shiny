@@ -164,8 +164,7 @@ nlmixr2model <- function() {
         calculatingInitialModel(results) 
 
         calculatingStatisticalModel(results)
-        results$forCov <- NULL
-        req(results$forCov)
+        req(results$parEstim)
 
          
        
