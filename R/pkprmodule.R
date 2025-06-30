@@ -1,3 +1,6 @@
+# Fixed preset properties 
+FIXED_PROPERTIES <- c("initial value", "rate") # List of fixed properties that can't be modified 
+
 addprop <- function(property=c("initial value", "bioavailability", "rate", "duration", "lag time"),
                     compartment){
   property <- match.arg(property)
@@ -7,7 +10,6 @@ addprop <- function(property=c("initial value", "bioavailability", "rate", "dura
          "duration"=paste("addDur(",compartment,")"),
          "lag time"=paste("addLag(",compartment,")"))
 }
-
 
 pipeAllProp <- function(df){
   checkmate::assertDataFrame(df)
@@ -52,11 +54,34 @@ pkprServer <- function(id, results) {
     ns <- session$ns
     
     # Table data to track compartment-property combinations
-    table_data <- reactiveVal(data.frame(Compartment = character(0), Property = character(0), stringsAsFactors = FALSE))
+    table_data <- reactiveVal(
+      data.frame(
+        Compartment = character(0),
+        Property = character(0),
+        Fixed = logical(0),  # New column to indicate fixed rows
+        stringsAsFactors = FALSE
+      )
+    )
+    
+    # Initialize fixed properties for the first compartment
+    observe({
+      req(results$pkpdm)  # Ensure pkpdm is available
+      if (nrow(table_data()) == 0) {
+        fixed_rows <- data.frame(
+          Compartment = results$pkpdm$state[1],  # Apply fixed properties to first compartment
+          Property = FIXED_PROPERTIES,
+          Fixed = TRUE,  # Mark these as fixed
+          stringsAsFactors = FALSE
+        )
+        table_data(fixed_rows)
+      }
+    })
     
     # Update pipeline output
     updatePipeOutput <- function() {
-      results$modProp <- pipeAllProp(table_data())
+      results$modProp <- pipeAllProp(
+        subset(table_data(), !Fixed)  # Include only editable rows in modProp
+      )
     }
     
     # Compartment selection UI
