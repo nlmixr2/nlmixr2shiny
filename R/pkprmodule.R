@@ -58,7 +58,6 @@ pkprServer <- function(id, results) {
       data.frame(
         Compartment = character(0),
         Property = character(0),
-        Fixed = logical(0),  # New column to indicate fixed rows
         stringsAsFactors = FALSE
       )
     )
@@ -66,11 +65,11 @@ pkprServer <- function(id, results) {
     # Initialize fixed properties for the first compartment
     observe({
       req(results$pkpdm)  # Ensure pkpdm is available
+      print(results$pkpdm$props)
       if (nrow(table_data()) == 0) {
         fixed_rows <- data.frame(
           Compartment = results$pkpdm$state[1],  # Apply fixed properties to first compartment
           Property = FIXED_PROPERTIES,
-          Fixed = TRUE,  # Mark these as fixed
           stringsAsFactors = FALSE
         )
         table_data(fixed_rows)
@@ -80,7 +79,7 @@ pkprServer <- function(id, results) {
     # Update pipeline output
     updatePipeOutput <- function() {
       results$modProp <- pipeAllProp(
-        subset(table_data(), !Fixed)  # Include only editable rows in modProp
+        table_data()  # Include all rows since 'Fixed' column is removed
       )
     }
     
@@ -115,7 +114,7 @@ pkprServer <- function(id, results) {
     output$table_output <- renderDT({
       td <- table_data()
       if (inherits(td, "data.frame") && nrow(td) > 0) {
-        td <- cbind(td, Remove = sprintf('<button class="btn btn-danger btn-sm delete" id="%s">-</button>', 1:nrow(td)))
+        td <- df <- cbind(td, Remove = ifelse(td$Property %in% FIXED_PROPERTIES, "Fixed", sprintf('<button class="btn btn-danger btn-sm delete" id="%s">-</button>', 1:nrow(td))))
       } else {
         td <- data.frame()
       }
