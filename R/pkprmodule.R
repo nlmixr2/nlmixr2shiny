@@ -53,7 +53,7 @@ pkprServer <- function(id, results) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
-    # Table data to track compartment-property combinations
+    # Initialize table data to track compartment-property combinations
     table_data <- reactiveVal(
       data.frame(
         Compartment = character(0),
@@ -62,16 +62,35 @@ pkprServer <- function(id, results) {
       )
     )
     
-    # Initialize fixed properties for the first compartment
-    observe({
+    # Dynamically determine fixed properties based on the model library
+    determineFixedProperties <- function() {
       req(results$pkpdm)  # Ensure pkpdm is available
       print(results$pkpdm$props)
+      
+      fixed_rows <- data.frame(
+        Compartment = character(0),
+        Property = character(0),
+        stringsAsFactors = FALSE
+      )
+      
       if (nrow(table_data()) == 0) {
-        fixed_rows <- data.frame(
-          Compartment = results$pkpdm$state[1],  # Apply fixed properties to first compartment
-          Property = FIXED_PROPERTIES,
-          stringsAsFactors = FALSE
-        )
+        fixed_props <- results$pkpdm$props[results$pkpdm$props %in% FIXED_PROPERTIES]
+        
+        if (length(fixed_props) > 0) {
+          fixed_rows <- data.frame(
+            Compartment = rep(results$pkpdm$state[1], length(fixed_props)),  # Assign to the initial compartment
+            Property = fixed_props,
+            stringsAsFactors = FALSE
+          )
+        }
+      }
+      return(fixed_rows)
+    }
+    
+    # Initialize fixed properties for the first compartment when applicable
+    observe({
+      fixed_rows <- determineFixedProperties()
+      if (nrow(fixed_rows) > 0) {
         table_data(fixed_rows)
       }
     })
@@ -79,7 +98,7 @@ pkprServer <- function(id, results) {
     # Update pipeline output
     updatePipeOutput <- function() {
       results$modProp <- pipeAllProp(
-        table_data()  # Include all rows since 'Fixed' column is removed
+        table_data()  # Include all rows
       )
     }
     
@@ -91,6 +110,7 @@ pkprServer <- function(id, results) {
     
     # Property selection UI
     output$property_ui <- renderUI({
+      req(results$pkpdm)  # Ensure pkpdm is available
       selectInput(ns("property"), "Property", choices = c("initial value", "bioavailability", "rate", "duration", "lag time"), width = "300px", selectize = FALSE, size = 5)
     })
     
@@ -114,10 +134,13 @@ pkprServer <- function(id, results) {
     output$table_output <- renderDT({
       td <- table_data()
       if (inherits(td, "data.frame") && nrow(td) > 0) {
-        td <- df <- cbind(td, Remove = ifelse(td$Property %in% FIXED_PROPERTIES, "Fixed", sprintf('<button class="btn btn-danger btn-sm delete" id="%s">-</button>', 1:nrow(td))))
+        # Add column Conditional Fixed or Remove Button
+        td <- cbind(td, Remove = ifelse(td$Property %in% FIXED_PROPERTIES, "Fixed", sprintf('<button class="btn btn-danger btn-sm delete" id="%s">-</button>', 1:nrow(td))))
       } else {
-        td <- data.frame()
+        td <- data.frame(Compartment = character(0), Property = character(0), Remove = character(0), stringsAsFactors = FALSE)
       }
+      
+      # Check for properties no longer part of the model
       w <- which(!(td$Compartment %in% results$pkpdm$state))
       if (length(w) > 0) {
         showModal(modalDialog(
@@ -128,9 +151,10 @@ pkprServer <- function(id, results) {
         ))
         td <- td[-w,,drop=FALSE]
         if (nrow(td) == 0) {
-          td <- data.frame()
+          td <- data.frame(Compartment = character(0), Property = character(0), Remove = character(0), stringsAsFactors = FALSE)
         }
       }
+      
       datatable(td, escape = FALSE, selection = 'none', rownames = FALSE,
                 options = list(dom = 't', ordering = FALSE, paging = FALSE))
     })
