@@ -62,7 +62,7 @@ pkprServer <- function(id, results) {
       )
     )
     
-    # Dynamically determine fixed properties based on the model library
+    # Dynamically determine fixed properties based on the model library excluding central compartment
     determineFixedProperties <- function() {
       req(results$pkpdm)  # Ensure pkpdm is available
       print(results$pkpdm$props)
@@ -74,7 +74,7 @@ pkprServer <- function(id, results) {
       )
       
       if (nrow(table_data()) == 0) {
-        fixed_props <- results$pkpdm$props[results$pkpdm$props %in% FIXED_PROPERTIES]
+        fixed_props <- results$pkpdm$props[results$pkpdm$props %in% FIXED_PROPERTIES & !(results$pkpdm$props %in% c("initial value", "rate") & results$pkpdm$state[1] == "central")]
         
         if (length(fixed_props) > 0) {
           fixed_rows <- data.frame(
@@ -135,7 +135,7 @@ pkprServer <- function(id, results) {
       td <- table_data()
       if (inherits(td, "data.frame") && nrow(td) > 0) {
         # Add column Conditional Fixed or Remove Button
-        td <- cbind(td, Remove = ifelse(td$Property %in% FIXED_PROPERTIES, "Fixed", sprintf('<button class="btn btn-danger btn-sm delete" id="%s">-</button>', 1:nrow(td))))
+        td <- cbind(td, Remove = ifelse(td$Property %in% FIXED_PROPERTIES & !(td$Property %in% c("initial value", "rate") & td$Compartment == "central"), "Fixed", sprintf('<button class="btn btn-danger btn-sm delete" id="%s">-</button>', 1:nrow(td))))
       } else {
         td <- data.frame(Compartment = character(0), Property = character(0), Remove = character(0), stringsAsFactors = FALSE)
       }
@@ -183,7 +183,6 @@ pkprServer <- function(id, results) {
     })
   })
 }
-
 
  
  
