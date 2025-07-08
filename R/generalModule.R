@@ -2,22 +2,22 @@
 #'
 #' @param results The Shiny lists that contains the results.
 #'
-#' @return nothing called for side effects 
+#' @return nothing called for side effects
 #' @noRd
 #'
-#' 
+#'
 calculatingInitialModel <-function(results){
   if (is.null(results$pkpdm)){
-    
+
     waiter_show(html = tagList(
       spin_fading_circles(),  # A nice spinning loading indicator
       h4("Calculating initial model...")
     ))
-    
+
     # Evaluate pipeline for results$pkpdm
-    
+
     results$pkpdm <- eval(str2lang(results$pkpdpipe))
-    
+
     waiter_hide()
   }
 }
@@ -27,20 +27,20 @@ calculatingInitialModel <-function(results){
 #'
 #' @param results This Shiny list contains the results.
 #'
-#' @return nothing called for side effects 
+#' @return nothing called for side effects
 #' @noRd
 #'
-#' 
+#'
 calculatingStatisticalModel <-function(results){
   if (is.null(results$forCov)){
     waiter_show(html = tagList(
       spin_fading_circles(),  # A nice spinning loading indicator
       h4("Calculating statistical model...")
     ))
-    
+
     # Evaluate the pipeline for results$forCov
     results$forCov <- eval(str2lang(paste(c("results$parEstim", results$ParEstimates), collapse = "|>\n\t")))
-    
+
     waiter_hide()
   }
 }
@@ -51,17 +51,17 @@ calculatingParameterEstimate <-function(results) {
       spin_fading_circles(),  # A nice spinning loading indicator
       h4("Calculating parameter estimates...")
     ))
-    
+
     # Evaluate the pipeline for results$ParaEstim
     results$parEstim <- eval(str2lang(paste(c("results$pkpdm", results$modProp), collapse = "|>\n\t")))
-    
+
     waiter_hide()
   }
-  
+
 }
 
 
-#' The nlmixr2model function 
+#' The nlmixr2model function
 #'
 #'
 #' @description The main UI function for the nlmixr2Shiny app using Shiny (no miniUI).
@@ -151,42 +151,36 @@ nlmixr2model <- function() {
         results$modProp <- NULL
         results$pkpdm <- NULL
       } else if (tab == "Model Property") {
-        calculatingInitialModel(results) 
+        calculatingInitialModel(results)
         results$parEst <- NULL
       } else if (tab == "Parameter Estimate") {
-        calculatingInitialModel(results) 
+        calculatingInitialModel(results)
         calculatingParameterEstimate(results)
         results$ParaEstim <- NULL
         req(results$pkpdm)
-       
+
         waiter_hide()
       } else if (tab == "Statistical Model") {
-        calculatingInitialModel(results) 
+        calculatingInitialModel(results)
 
         calculatingStatisticalModel(results)
         req(results$parEstim)
 
-         
-       
-        
+
+
+
       }
     })
 
-    
+
   }
 
 
   shiny::runGadget(ui, server, viewer = shiny::dialogViewer(
-    dialogName = "NLMixR2Shiny",
+    dialogName = "nlmixr2shiny",
     width = 4500,
     height = 3500
   ))
 
 
 }
-
-
-
-
-
-

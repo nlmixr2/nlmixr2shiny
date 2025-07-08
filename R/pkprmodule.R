@@ -19,13 +19,34 @@ modelPropToFullProp <- function(prop) {
   vapply(prop,
          function(v) {
            switch(v,
-                  "ini"="inital value",
+                  "ini"="initial value",
                   "f"="bioavailability",
                   "alag"="lag time",
                   "dur"="duration",
                   "rate"="rate")
          }, character(1), USE.NAMES = FALSE)
 }
+#'  Model Property Initial values (based on cmtProp)
+#'
+#'
+#' @param cmtProp cmtProp from ui that tells what properties are in the model
+#' @return An initial data frame with compartments and properties (fixed)
+#' @noRd
+#' @author Matthew L. Fidler
+modelPropIni <- function(cmtProp) {
+  if (is.null(cmtProp)) {
+    data.frame(Compartment = character(0),
+               Property = character(0),
+               Remove = character(0),
+               stringsAsFactors = FALSE)
+  } else {
+    data.frame(Compartment = cmtProp$Compartment,
+                      Property = modelPropToFullProp(cmtProp$Property),
+                      Remove = "Fixed",
+                      stringsAsFactors = FALSE)
+  }
+}
+
 
 pipeAllProp <- function(df){
   checkmate::assertDataFrame(df)
@@ -64,8 +85,6 @@ pkprUI <- function(id) {
   )
 }
 
-
-
 pkprServer <- function(id, results) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
@@ -82,7 +101,6 @@ pkprServer <- function(id, results) {
     # Dynamically determine fixed properties based on the model library excluding specific properties for central compartment
     determineFixedProperties <- function() {
       req(results$pkpdm)  # Ensure pkpdm is available
-      print(results$pkpdm$props)
 
       fixed_rows <- data.frame(
         Compartment = character(0),
@@ -95,7 +113,6 @@ pkprServer <- function(id, results) {
     # Initialize fixed properties for the first compartment when applicable
     observe({
       fixed_rows <- determineFixedProperties()
-      print(fixed_rows)
       if (nrow(fixed_rows) > 0) {
         table_data(fixed_rows)
       }
@@ -123,7 +140,12 @@ pkprServer <- function(id, results) {
     # Adding rows to the table
     observeEvent(input$add_row, {
       new_row <- data.frame(Compartment = input$compartment, Property = input$property, stringsAsFactors = FALSE)
-      if (nrow(subset(table_data(), Compartment == new_row$Compartment & Property == new_row$Property)) > 0) {
+
+      td <- rbind(table_data(),
+                  modelPropIni(results$pkpdm$props$cmtProp)[,1:2])
+      if (nrow(subset(td,
+                      Compartment == new_row$Compartment &
+                        Property == new_row$Property)) > 0) {
         showModal(modalDialog(
           title = "Error",
           "This Compartment-Property combination already exists.",
@@ -139,17 +161,7 @@ pkprServer <- function(id, results) {
     # Render data table
     output$table_output <- renderDT({
       td <- table_data()
-      if (is.null(results$pkpdm$props$cmtProp)) {
-        td0 <- data.frame(Compartment = character(0),
-                          Property = character(0),
-                          Remove = character(0),
-                          stringsAsFactors = FALSE)
-      } else {
-        td0 <- data.frame(Compartment = results$pkpdm$props$cmtProp$Compartment,
-                          Property = modelPropToFullProp(results$pkpdm$props$cmtProp$Property),
-                          Remove = "Fixed",
-                          stringsAsFactors = FALSE)
-      }
+      td0 <- modelPropIni(results$pkpdm$props$cmtProp)
       if (inherits(td, "data.frame") && nrow(td) > 0) {
         # Add column Conditional Fixed or Remove Button
         td <- rbind(cbind(td, Remove = sprintf('<button class="btn btn-danger btn-sm delete" id="%s">-</button>', 1:nrow(td))),
