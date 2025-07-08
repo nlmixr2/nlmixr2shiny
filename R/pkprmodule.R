@@ -1,4 +1,4 @@
-# Fixed preset properties 
+# Fixed preset properties
 addprop <- function(property=c("initial value", "bioavailability", "rate", "duration", "lag time"),
                     compartment){
   property <- match.arg(property)
@@ -51,7 +51,7 @@ pkprUI <- function(id) {
 pkprServer <- function(id, results) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
-    
+
     # Initialize table data to track compartment-property combinations
     table_data <- reactiveVal(
       data.frame(
@@ -60,42 +60,20 @@ pkprServer <- function(id, results) {
         stringsAsFactors = FALSE
       )
     )
-    
+
     # Dynamically determine fixed properties based on the model library excluding specific properties for central compartment
     determineFixedProperties <- function() {
       req(results$pkpdm)  # Ensure pkpdm is available
       print(results$pkpdm$props)
-      
+
       fixed_rows <- data.frame(
         Compartment = character(0),
         Property = character(0),
         stringsAsFactors = FALSE
       )
-      
-      if (nrow(table_data()) == 0) {
-        fixed_props <- results$pkpdm$props[results$pkpdm$props %in% FIXED_PROPERTIES]
-        
-        if (length(fixed_props) > 0 && results$pkpdm$state[1] != "central") {
-          fixed_rows <- data.frame(
-            Compartment = rep(results$pkpdm$state[1], length(fixed_props)),  # Assign fixed properties to the initial compartment
-            Property = fixed_props,
-            stringsAsFactors = FALSE
-          )
-        } else if (length(fixed_props) > 0) {
-          fixed_props <- fixed_props[!(fixed_props %in% c("initial value", "rate"))] # Remove specific properties for central compartment
-          
-          if (length(fixed_props) > 0) {
-            fixed_rows <- data.frame(
-              Compartment = rep(results$pkpdm$state[1], length(fixed_props)),  # Assign fixed properties to the initial compartment
-              Property = fixed_props,
-              stringsAsFactors = FALSE
-            )
-          }
-        }
-      }
       return(fixed_rows)
     }
-    
+
     # Initialize fixed properties for the first compartment when applicable
     observe({
       fixed_rows <- determineFixedProperties()
@@ -104,26 +82,26 @@ pkprServer <- function(id, results) {
         table_data(fixed_rows)
       }
     })
-    
+
     # Update pipeline output
     updatePipeOutput <- function() {
       results$modProp <- pipeAllProp(
-        table_data(),  # Include all rows
+        table_data()  # Include all rows
       )
     }
-    
+
     # Compartment selection UI
     output$compartment_ui <- renderUI({
       req(results$pkpdm)  # Ensure pkpdm is available
       selectInput(ns("compartment"), "Compartment", choices = results$pkpdm$state, width = "300px", selectize = FALSE, size = 5)
     })
-    
+
     # Property selection UI
     output$property_ui <- renderUI({
       req(results$pkpdm)  # Ensure pkpdm is available
       selectInput(ns("property"), "Property", choices = c("initial value", "bioavailability", "rate", "duration", "lag time"), width = "300px", selectize = FALSE, size = 5)
     })
-    
+
     # Adding rows to the table
     observeEvent(input$add_row, {
       new_row <- data.frame(Compartment = input$compartment, Property = input$property, stringsAsFactors = FALSE)
@@ -139,7 +117,7 @@ pkprServer <- function(id, results) {
         updatePipeOutput()  # Update pipeline output when a row is added
       }
     })
-    
+
     # Render data table
     output$table_output <- renderDT({
       td <- table_data()
@@ -147,16 +125,16 @@ pkprServer <- function(id, results) {
         # Add column Conditional Fixed or Remove Button
         # td <- cbind(td, Remove = ifelse(td$Property %in% FIXED_PROPERTIES & !(td$Property %in% c("initial value", "rate") & td$Compartment == "central"), "Fixed", sprintf('<button class="btn btn-danger btn-sm delete" id="%s">-</button>', 1:nrow(td))))
       } else {
-       
+
         if (is.null(results$pkpdm$props$cmtProp)) {
           td <- data.frame(Compartment = character(0), Property = character(0), Remove = character(0), stringsAsFactors = FALSE)
         } else {
-          td <- data.frame(Compartment = results$pkpdm$props$cmtProp$Compartment, 
+          td <- data.frame(Compartment = results$pkpdm$props$cmtProp$Compartment,
                            Property = results$pkpdm$props$cmtProp$Property, Remove = "Fixed", stringsAsFactors = FALSE)
         }
-          
+
       }
-      
+
       # Check for properties no longer part of the model
       w <- which(!(td$Compartment %in% results$pkpdm$state))
       if (length(w) > 0) {
@@ -171,11 +149,11 @@ pkprServer <- function(id, results) {
           td <- data.frame(Compartment = character(0), Property = character(0), Remove = character(0), stringsAsFactors = FALSE)
         }
       }
-      
+
       datatable(td, escape = FALSE, selection = 'none', rownames = FALSE,
                 options = list(dom = 't', ordering = FALSE, paging = FALSE))
     })
-    
+
     # Handling delete button click in the table
     observeEvent(input$table_output_cell_clicked, {
       info <- input$table_output_cell_clicked
@@ -185,7 +163,7 @@ pkprServer <- function(id, results) {
         updatePipeOutput()
       }
     })
-    
+
     # Copy model code button functionality
     observeEvent(input$copy_code, {
       waiter_show(html = tagList(
@@ -194,13 +172,9 @@ pkprServer <- function(id, results) {
       ))
       model_code <- paste("mod1 <- ",deparse(as.function(eval(str2lang(paste(c("results$pkpdm", results$modProp), collapse = "|>\n\t"))))), collapse="\n")
       rstudioapi::insertText(model_code)
-      
+
       waiter_hide()
       stopApp()  # Close the app after the code is copied
     })
   })
 }
-
- 
- 
- 
