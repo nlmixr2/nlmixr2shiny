@@ -8,6 +8,24 @@ addprop <- function(property=c("initial value", "bioavailability", "rate", "dura
          "duration"=paste("addDur(",compartment,")"),
          "lag time"=paste("addLag(",compartment,")"))
 }
+#' Convert model property to full property name in the UI
+#'
+#'
+#' @param prop A character vector of model properties, e.g., "ini", "f", "alag", "dur", "rate".
+#' @return A character vector of full property names.
+#' @noRd
+#' @author Matthew L. Fidler
+modelPropToFullProp <- function(prop) {
+  vapply(prop,
+         function(v) {
+           switch(v,
+                  "ini"="inital value",
+                  "f"="bioavailability",
+                  "alag"="lag time",
+                  "dur"="duration",
+                  "rate"="rate")
+         }, character(1), USE.NAMES = FALSE)
+}
 
 pipeAllProp <- function(df){
   checkmate::assertDataFrame(df)
@@ -128,7 +146,7 @@ pkprServer <- function(id, results) {
                           stringsAsFactors = FALSE)
       } else {
         td0 <- data.frame(Compartment = results$pkpdm$props$cmtProp$Compartment,
-                          Property = results$pkpdm$props$cmtProp$Property,
+                          Property = modelPropToFullProp(results$pkpdm$props$cmtProp$Property),
                           Remove = "Fixed",
                           stringsAsFactors = FALSE)
       }
