@@ -1,6 +1,4 @@
 # Fixed preset properties 
-FIXED_PROPERTIES <- c("initial value", "rate") # List of fixed properties that can't be modified 
-
 addprop <- function(property=c("initial value", "bioavailability", "rate", "duration", "lag time"),
                     compartment){
   property <- match.arg(property)
@@ -13,12 +11,12 @@ addprop <- function(property=c("initial value", "bioavailability", "rate", "dura
 
 pipeAllProp <- function(df){
   checkmate::assertDataFrame(df)
+  df <- df[df$Property != "Fixed",, drop=FALSE ]
   if(nrow(df)==0){
     character(0)
   } else {
     vapply(1:nrow(df), function(i){
       addprop(df$Property[i],df$Compartment[i])},character(1))
-    df <- df[df$Property != "Fixed", ]
   }
 }
 
