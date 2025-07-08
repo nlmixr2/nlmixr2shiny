@@ -18,6 +18,7 @@ pipeAllProp <- function(df){
   } else {
     vapply(1:nrow(df), function(i){
       addprop(df$Property[i],df$Compartment[i])},character(1))
+    df <- df[df$Property != "Fixed", ]
   }
 }
 
@@ -109,7 +110,7 @@ pkprServer <- function(id, results) {
     # Update pipeline output
     updatePipeOutput <- function() {
       results$modProp <- pipeAllProp(
-        table_data()  # Include all rows
+        table_data(),  # Include all rows
       )
     }
     
