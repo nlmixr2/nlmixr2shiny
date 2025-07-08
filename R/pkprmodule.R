@@ -62,7 +62,7 @@ pkprServer <- function(id, results) {
       )
     )
     
-    # Dynamically determine fixed properties based on the model library excluding central compartment
+    # Dynamically determine fixed properties based on the model library excluding specific properties for central compartment
     determineFixedProperties <- function() {
       req(results$pkpdm)  # Ensure pkpdm is available
       print(results$pkpdm$props)
@@ -74,14 +74,24 @@ pkprServer <- function(id, results) {
       )
       
       if (nrow(table_data()) == 0) {
-        fixed_props <- results$pkpdm$props[results$pkpdm$props %in% FIXED_PROPERTIES & !(results$pkpdm$props %in% c("initial value", "rate") & results$pkpdm$state[1] == "central")]
+        fixed_props <- results$pkpdm$props[results$pkpdm$props %in% FIXED_PROPERTIES]
         
-        if (length(fixed_props) > 0) {
+        if (length(fixed_props) > 0 && results$pkpdm$state[1] != "central") {
           fixed_rows <- data.frame(
-            Compartment = rep(results$pkpdm$state[1], length(fixed_props)),  # Assign to the initial compartment
+            Compartment = rep(results$pkpdm$state[1], length(fixed_props)),  # Assign fixed properties to the initial compartment
             Property = fixed_props,
             stringsAsFactors = FALSE
           )
+        } else if (length(fixed_props) > 0) {
+          fixed_props <- fixed_props[!(fixed_props %in% c("initial value", "rate"))] # Remove specific properties for central compartment
+          
+          if (length(fixed_props) > 0) {
+            fixed_rows <- data.frame(
+              Compartment = rep(results$pkpdm$state[1], length(fixed_props)),  # Assign fixed properties to the initial compartment
+              Property = fixed_props,
+              stringsAsFactors = FALSE
+            )
+          }
         }
       }
       return(fixed_rows)
@@ -90,6 +100,7 @@ pkprServer <- function(id, results) {
     # Initialize fixed properties for the first compartment when applicable
     observe({
       fixed_rows <- determineFixedProperties()
+      print(fixed_rows)
       if (nrow(fixed_rows) > 0) {
         table_data(fixed_rows)
       }
@@ -135,9 +146,16 @@ pkprServer <- function(id, results) {
       td <- table_data()
       if (inherits(td, "data.frame") && nrow(td) > 0) {
         # Add column Conditional Fixed or Remove Button
-        td <- cbind(td, Remove = ifelse(td$Property %in% FIXED_PROPERTIES & !(td$Property %in% c("initial value", "rate") & td$Compartment == "central"), "Fixed", sprintf('<button class="btn btn-danger btn-sm delete" id="%s">-</button>', 1:nrow(td))))
+        # td <- cbind(td, Remove = ifelse(td$Property %in% FIXED_PROPERTIES & !(td$Property %in% c("initial value", "rate") & td$Compartment == "central"), "Fixed", sprintf('<button class="btn btn-danger btn-sm delete" id="%s">-</button>', 1:nrow(td))))
       } else {
-        td <- data.frame(Compartment = character(0), Property = character(0), Remove = character(0), stringsAsFactors = FALSE)
+       
+        if (is.null(results$pkpdm$props$cmtProp)) {
+          td <- data.frame(Compartment = character(0), Property = character(0), Remove = character(0), stringsAsFactors = FALSE)
+        } else {
+          td <- data.frame(Compartment = results$pkpdm$props$cmtProp$Compartment, 
+                           Property = results$pkpdm$props$cmtProp$Property, Remove = "Fixed", stringsAsFactors = FALSE)
+        }
+          
       }
       
       # Check for properties no longer part of the model
