@@ -121,18 +121,23 @@ pkprServer <- function(id, results) {
     # Render data table
     output$table_output <- renderDT({
       td <- table_data()
+      if (is.null(results$pkpdm$props$cmtProp)) {
+        td0 <- data.frame(Compartment = character(0),
+                          Property = character(0),
+                          Remove = character(0),
+                          stringsAsFactors = FALSE)
+      } else {
+        td0 <- data.frame(Compartment = results$pkpdm$props$cmtProp$Compartment,
+                          Property = results$pkpdm$props$cmtProp$Property,
+                          Remove = "Fixed",
+                          stringsAsFactors = FALSE)
+      }
       if (inherits(td, "data.frame") && nrow(td) > 0) {
         # Add column Conditional Fixed or Remove Button
-        # td <- cbind(td, Remove = ifelse(td$Property %in% FIXED_PROPERTIES & !(td$Property %in% c("initial value", "rate") & td$Compartment == "central"), "Fixed", sprintf('<button class="btn btn-danger btn-sm delete" id="%s">-</button>', 1:nrow(td))))
+        td <- rbind(cbind(td, Remove = sprintf('<button class="btn btn-danger btn-sm delete" id="%s">-</button>', 1:nrow(td))),
+                    td0)
       } else {
-
-        if (is.null(results$pkpdm$props$cmtProp)) {
-          td <- data.frame(Compartment = character(0), Property = character(0), Remove = character(0), stringsAsFactors = FALSE)
-        } else {
-          td <- data.frame(Compartment = results$pkpdm$props$cmtProp$Compartment,
-                           Property = results$pkpdm$props$cmtProp$Property, Remove = "Fixed", stringsAsFactors = FALSE)
-        }
-
+        td <- td0
       }
 
       # Check for properties no longer part of the model
@@ -149,7 +154,6 @@ pkprServer <- function(id, results) {
           td <- data.frame(Compartment = character(0), Property = character(0), Remove = character(0), stringsAsFactors = FALSE)
         }
       }
-
       datatable(td, escape = FALSE, selection = 'none', rownames = FALSE,
                 options = list(dom = 't', ordering = FALSE, paging = FALSE))
     })
