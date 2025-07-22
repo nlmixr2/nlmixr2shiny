@@ -43,6 +43,20 @@ calculatingStatisticalModel <-function(results){
 
     waiter_hide()
   }
+  
+  calculatingExploreData <-function(results) {
+    if(is.null(results$forCov)){
+      waiter_show(html = tagList(
+        spin_seven_circle(), # A nice spinning loading indicator
+        h4("Calculating explore data...")
+      ))
+      
+      # Evaluate the pipeline for results$forCov
+      results$forCov <- eval(str2lang(paste(c("results$parEstim", results$ParEstimates), collapse = "|>\n\t")))
+      
+      waiter_hide()
+    }
+  }
 }
 
 calculatingParameterEstimate <-function(results) {
@@ -117,7 +131,10 @@ nlmixr2model <- function() {
       tabPanel("Parameter Estimate", icon = icon("calculator"), ParEstUI("parameterEstimate")),
 
       # Tab for Statistical Model
-      tabPanel("Statistical Model", icon = icon("chart-bar"), covUI("covariancEstimate"))
+      tabPanel("Statistical Model", icon = icon("chart-bar"), covUI("covariancEstimate")),
+      
+      # Tab for Explore Data
+      tabPanel("Explore Data", icon = icon("play"), expUI("exploreData"))
 
       # Additional tab for Simulation if needed
       # tabPanel("Simulation", icon = icon("play"), pksimUI("simulation"))
