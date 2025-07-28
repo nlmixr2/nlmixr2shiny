@@ -47,92 +47,90 @@ results <- list(
   }
 )
 
-# UI definition
-ui <- fluidPage(
-  titlePanel("Dynamic Exploratory Data Analysis with forCov Integration"),
-  sidebarLayout(
-    sidebarPanel(
-      selectInput("dataset", "Select a dataset:", choices = getDataNamesForExploration()),  # Dataset selector
-      actionButton("loadData", "Load Dataset"),  # Button to load dataset
-      sliderInput("page", "Page:", value = 1, min = 1, max = 1, step = 1)  # Pagination slider
+# UI Module for Explore Data
+expUI <- function(id) {
+  ns <- NS(id)
+  tagList(
+    fluidRow(
+      column(
+        4,
+        selectInput(
+          ns("dataset"), "Select Dataset:",
+          choices = getDataNamesForExploration(),
+          selected = NULL
+        )
+      ),
+      column(
+        4,
+        actionButton(ns("loadData"), "Load Dataset", class = "btn-primary")
+      ),
+      column(
+        4,
+        sliderInput(
+          ns("page"), "Select Plot Page:", value = 1, min = 1, max = 1, step = 1
+        )
+      )
     ),
-    mainPanel(
-      tableOutput("dataTable"),  # Render selected dataset in a table
-      plotOutput("dataPlot")     # Render paginated ggplot
+    fluidRow(
+      column(12,tableOutput(ns("dataPreview")))
+    ),
+    fluidRow(
+      column(12,tableOutput(ns("dataPlot")))
     )
   )
-)
-
-# Server definition
-server <- function(input, output, session) {
-  # Reactive value for processed dataset
-  selectedData <- reactiveVal(NULL)
-  
-  # Observe dataset loading event
-  observeEvent(input$loadData, {
-    req(input$dataset)
-    
-    # Dynamically load the selected dataset
-    data <- getDataForExploration(input$dataset)
-    
-    # Validation: Ensure essential columns exist
-    if (!"TIME" %in% names(data) || !"ID" %in% names(data)) {
-      stop("Dataset must contain columns `TIME` and `ID`.")
-    }
-    
-    # Label the dataset based on its type (Single-Dose or Multi-Dose)
-    if (input$dataset == "theo_sd") {
-      data$dataset <- "Single-Dose"
-    } else if (input$dataset == "theo_md") {
-      data$dataset <- "Multi-Dose"
-    }
-    
-    # Generate model predictions dynamically using `results$forCov`
-    predictions <- results$forCov(data)
-    if (length(predictions) != nrow(data)) {
-      stop("Error: Number of predictions does not match number of rows in the dataset.")
-    }
-    data$estimate <- predictions
-    
-    # Store the processed dataset in a reactive value
-    selectedData(data)
-    
-    # Update slider for pagination
-    num_ids <- length(unique(data$ID))
-    facets_per_page <- 4  # Configured as 2x2 grid
-    num_pages <- ceiling(num_ids / facets_per_page)
-    updateSliderInput(session, "page", min = 1, max = num_pages, value = 1)
-  })
-  
-  # Render data table
-  output$dataTable <- renderTable({
-    req(selectedData())
-    head(selectedData())
-  })
-  
-  # Render paginated plot
-  output$dataPlot <- renderPlot({
-    req(selectedData())
-    data <- selectedData()
-    
-    ggplot(data, aes(x = TIME)) +
-      geom_point(aes(y = DV, color = "Observed Data"), size = 3) +
-      geom_line(aes(y = estimate, color = "Model Prediction"), linetype = "dashed", size = 1) +
-      facet_wrap_paginate(~ID, ncol = 2, nrow = 2, page = input$page) +
-      labs(
-        title = paste("Exploratory Data Analysis - Page", input$page),
-        x = "Time (hours)",
-        y = "Concentration (mg/L)",
-        color = "Legend"
-      ) +
-      scale_color_manual(values = c("Observed Data" = "blue", "Model Prediction" = "red")) +
-      theme_minimal() +
-      theme(
-        plot.title = element_text(hjust = 0.5),
-        legend.position = "top"
-      )
-  })
 }
 
-# Launch the app
-shinyApp(ui, server)
+# Server Module for Explore Data
+expServer <- function(id) {
+  moduleServer(id, function(input, output, session) {
+    ns <- session$ns
+    
+    # Reactive value to store the selected dataset
+    selectedData <- reactiveVal(NULL)
+    
+    # Observe the Load Dataset event
+    observeEvent(input$loadData, {
+      req(input$dataset)  # Ensure a dataset is selected
+      
+      # Dynamically fetch the selected dataset
+      dataset <- getDataForExploration(input$dataset)
+      
+      # Validate that the dataset has required columns
+      if (!"TIME" %in% names(dataset) || !"ID" %in% names(dataset)) {
+        stop("The dataset must include `TIME` and `ID` columns to continue.")
+      }
+      
+      # Store the dataset in a reactive value
+      selectedData(dataset)
+      
+      # Calculate the number of pages required for pagination
+      num_ids <- length(unique(dataset$ID))
+      facets_per_page <- 4  # Number of facets per page (e.g., 2x2 grid)
+      num_pages <- ceiling(num_ids / facets_per_page)
+      updateSliderInput(session, "page", min = 1, max = num_pages, value = 1)
+    })
+    
+    # Render table preview
+    output$dataPreview <- renderTable({
+      req(selectedData())  # Ensure dataset is loaded
+      head(selectedData())  # Show the first few rows
+    })
+    
+    # Render paginated plots
+    output$dataPlot <- renderPlot({
+      req(selectedData())  # Ensure dataset is loaded
+      dataset <- selectedData()
+      
+      ggplot(dataset, aes(x = TIME, y = DV)) +
+        geom_point(color = "blue", size = 3, alpha = 0.8) +
+        facet_wrap_paginate(~ID, ncol = 2, nrow = 2, page = input$page) +
+        labs(
+          title = paste("Explore Data - Page", input$page),
+          x = "Time",
+          y = "Dependent Variable (DV)"
+        ) +
+        theme_minimal() +
+        theme(plot.title = element_text(hjust = 0.5))
+    })
+  })
+}
