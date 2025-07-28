@@ -81,7 +81,7 @@ expUI <- function(id) {
 }
 
 # Server Module for Explore Data
-expServer <- function(id) {
+expServer <- function(id, results, UI) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
