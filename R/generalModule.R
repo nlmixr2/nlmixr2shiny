@@ -90,15 +90,14 @@ calculatingParameterEstimate <-function(results) {
 #' @import nlmixr2lib
 #' @export
 nlmixr2model <- function() {
-  library(nlmixr2lib)
-  ui <- fluidPage(
+  library(nlmixr2lib)(
     useShinyjs(),
     useWaiter(),
-
-    # Custom CSS to manage margins and enhance the display
+    
+    # Custom CSS for styling margins and layout
     tags$style(HTML("
       .content {
-        margin: 15px;  /* Adds margin around the content */
+        margin: 15px;  /* Adds margin to the content */
       }
       .navbar {
         background-color: #f7f7f7;
@@ -109,88 +108,107 @@ nlmixr2model <- function() {
         align-items: center;
       }
       .app-logo {
-        max-height: 40px;  /* Logo size adjustment */
+        max-height: 40px;  /* Adjust logo size */
         margin-right: 10px;
       }
     ")),
-
-    # Navigation bar with the title and logo
+    
     navbarPage(
       title = div(
-        tags$img(src=paste0("data:image/png;base64,",xfun::base64_encode(system.file("logonlmixr.png", package = "nlmixr2shiny"))),height=40)
+        tags$img(
+          src = paste0("data:image/png;base64,", xfun::base64_encode(system.file("logonlmixr.png", package = "nlmixr2shiny"))),
+          height = 40
+        )
       ),
       id = "mainTabs",
-
+      
       # Tab for PKPD Model
       tabPanel("PKPD Model", icon = icon("cogs"), pkUI("pkpdModel")),
-
+      
       # Tab for Model Property
       tabPanel("Model Property", icon = icon("wrench"), pkprUI("modelProperty")),
-
+      
       # Tab for Parameter Estimate
       tabPanel("Parameter Estimate", icon = icon("calculator"), ParEstUI("parameterEstimate")),
-
+      
       # Tab for Statistical Model
       tabPanel("Statistical Model", icon = icon("chart-bar"), covUI("covariancEstimate")),
       
       # Tab for Explore Data
       tabPanel("Explore Data", icon = icon("play"), expUI("exploreData"))
-
-      # Additional tab for Simulation if needed
-      # tabPanel("Simulation", icon = icon("play"), pksimUI("simulation"))
     )
   )
+  
+  return(ui)
+}
+     
+server <- function(input, output, session) {
+  # Reactive values to store intermediate results
+  results <- reactiveValues(
+    pkpdpipe = character(0),
+    pkpdm = NULL,
+    modProp = NULL,
+    parEst = NULL,
+    covarianceMat = NULL,
+    forCov = NULL
+  )
+  
+  # Call server modules with placeholder logic
+  pkServer("pkpdModel", results)
+  pkprServer("modelProperty", results)
+  ParEstServer("parameterEstimate", results)
+  covServer("covariancEstimate", results)
+  
+  # Monitor active tabs and update reactive results
+  observeEvent(input$mainTabs, {
+    tab <- input$mainTabs
+    if (tab == "PKPD Model") {
+      results$parEst <- NULL
+      results$modProp <- NULL
+      results$pkpdm <- NULL
+    } else if (tab == "Model Property") {
+      results$modProp <- "Model Property Results"
+    } else if (tab == "Parameter Estimate") {
+      results$parEst <- "Parameter Estimate Results"
+    } else if (tab == "Statistical Model") {
+      results$covarianceMat <- "Statistical Model Results"
+    }
+  })
+}
 
-  server <- function(input, output, session) {
-    # Reactive values to store the intermediate results
-    results <- reactiveValues(
-      pkpdpipe = character(0),
-      pkpdm = NULL,
-      modProp = NULL,
-      parEst = NULL,
-      covarianceMat = NULL,
-      forCov = NULL # This is supposed to match calculations in 'calculatingStatisticalModel
+pkServer <- function(id, results) {
+  moduleServer(id, function(input, output, session) {
+    output$pkpdOutput <- renderText("PKPD Model logic goes here!")
+  })
+}
+
+pkprServer <- function(id, results) {
+  moduleServer(id, function(input, output, session) {
+    output$modelPropOutput <- renderText("Model Property logic goes here!")
+  })
+}
+
+ParEstServer <- function(id, results) {
+  moduleServer(id, function(input, output, session) {
+    output$parEstimateOutput <- renderText("Parameter Estimate logic goes here!")
+  })
+}
+
+covServer <- function(id, results) {
+  moduleServer(id, function(input, output, session) {
+    output$covEstimateOutput <- renderText("Statistical Model logic goes here!")
+  })
+}
+
+expUI <- function(id) {
+  ns <- NS(id)
+  fluidPage(
+    titlePanel("Explore Data"),
+    fluidRow(
+      column(12, textOutput(ns("exploreDataOutput")))
     )
-
-    # Call the respective server modules
-    pkServer("pkpdModel", results)
-    pkprServer("modelProperty", results)
-    ParEstServer("parameterEstimate", results)
-    covServer("covariancEstimate", results)
-
-    # Monitor active tab and update results based on the selected tab
-    observeEvent(input$mainTabs, {
-      tab <- input$mainTabs
-
-
-      if (tab == "PKPD Model") {
-        results$parEst <- NULL
-        results$modProp <- NULL
-        results$pkpdm <- NULL
-      } else if (tab == "Model Property") {
-        calculatingInitialModel(results)
-        results$parEst <- NULL
-      } else if (tab == "Parameter Estimate") {
-        calculatingInitialModel(results)
-        calculatingParameterEstimate(results)
-        results$ParaEstim <- NULL
-        req(results$pkpdm)
-
-        waiter_hide()
-      } else if (tab == "Statistical Model") {
-        calculatingInitialModel(results)
-
-        calculatingStatisticalModel(results)
-        req(results$parEstim)
-
-
-
-
-      }
-    })
-
-
-  }
+  )
+}
 
 
   shiny::runGadget(ui, server, viewer = shiny::dialogViewer(
@@ -200,4 +218,4 @@ nlmixr2model <- function() {
   ))
 
 
-}
+
