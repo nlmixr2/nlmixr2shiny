@@ -110,24 +110,40 @@ expServer <- function(id, results, UI) {
       updateSliderInput(session, "page", min = 1, max = num_pages, value = 1)
     })
     
-    # Render table preview
-    output$dataPreview <- renderTable({
-      req(selectedData())  # Ensure dataset is loaded
-      head(selectedData())  # Show the first few rows
-    })
-    
-    # Render paginated plots
-    output$dataPlot <- renderPlot({
-      req(selectedData())  # Ensure dataset is loaded
+    # Dynamically calculate PK/PD model outputs
+    modelData <- reactive({
+      req(selectedData())
+      req(is.function(results$forCov))  # Ensure results$forCov is a valid function
+      
       dataset <- selectedData()
       
-      ggplot(dataset, aes(x = TIME, y = DV)) +
+      # Apply model function to dataset dynamically
+      dataset <- results$forCov(dataset)
+      
+      dataset  # Return modified dataset
+    })
+      
+      
+    
+    # Render table preview
+    output$dataPreview <- renderTable({
+      req(modelData())  # Ensure model data exists
+      head(modelData())  # Display the first few rows of augmented data
+    })
+    
+    
+    # Render paginated plot
+    output$dataPlot <- renderPlot({
+      req(modelData())
+      augmentedDataset <- modelData()
+      
+      ggplot(augmentedDataset, aes(x = TIME, y = effect)) +
         geom_point(color = "blue", size = 3, alpha = 0.8) +
         facet_wrap_paginate(~ID, ncol = 2, nrow = 2, page = input$page) +
         labs(
-          title = paste("Explore Data - Page", input$page),
+          title = paste("Explore PK/PD Data - Page", input$page),
           x = "Time",
-          y = "Dependent Variable (DV)"
+          y = "Effect"
         ) +
         theme_minimal() +
         theme(plot.title = element_text(hjust = 0.5))
