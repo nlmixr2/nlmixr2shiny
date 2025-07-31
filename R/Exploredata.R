@@ -84,14 +84,7 @@ expUI <- function(id) {
 expServer <- function(id, results, UI) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
-    matrixDF <- reactive({
-      req(results$forCov)  # Ensure results$forCov is available
-      matrixData <- results$forCov$omega  # Access the omega matrix
-      as.data.frame(matrixData)  # Convert to data frame
-    })
-    matrixDF <- reactive({
-      print(results$forCov)
-    })
+    
     # Reactive value to store the selected dataset
     selectedData <- reactiveVal(NULL)
     
@@ -120,17 +113,17 @@ expServer <- function(id, results, UI) {
     # Dynamically calculate PK/PD model outputs
     modelData <- reactive({
       req(selectedData())
-      req(is.function(results$forCov))  # Ensure results$forCov is a valid function
+      req(results$forCov)  # Ensure results$forCov is a valid function
       
       dataset <- selectedData()
       
       # Apply model function to dataset dynamically
-      dataset <- results$forCov(dataset)
+      dataset <- rxSolve(results$forCov,selectedData())
       
       dataset  # Return modified dataset
     })
-      
-      
+    
+    
     
     # Render table preview
     output$dataPreview <- renderTable({
@@ -154,6 +147,8 @@ expServer <- function(id, results, UI) {
         ) +
         theme_minimal() +
         theme(plot.title = element_text(hjust = 0.5))
+        
+        print(plot)
     })
   })
 }
