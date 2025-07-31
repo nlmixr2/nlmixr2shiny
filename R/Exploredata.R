@@ -84,7 +84,14 @@ expUI <- function(id) {
 expServer <- function(id, results, UI) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
-    
+    matrixDF <- reactive({
+      req(results$forCov)  # Ensure results$forCov is available
+      matrixData <- results$forCov$omega  # Access the omega matrix
+      as.data.frame(matrixData)  # Convert to data frame
+    })
+    matrixDF <- reactive({
+      print(results$forCov)
+    })
     # Reactive value to store the selected dataset
     selectedData <- reactiveVal(NULL)
     
