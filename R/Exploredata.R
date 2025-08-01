@@ -99,15 +99,17 @@ expServer <- function(id, results, UI) {
       if (!"TIME" %in% names(dataset) || !"ID" %in% names(dataset)) {
         stop("The dataset must include `TIME` and `ID` columns to continue.")
       }
-      
+      # browser()
       # Store the dataset in a reactive value
       selectedData(dataset)
+      print(selectedData)
       
       # Calculate the number of pages required for pagination
       num_ids <- length(unique(dataset$ID))
       facets_per_page <- 4  # Number of facets per page (e.g., 2x2 grid)
       num_pages <- ceiling(num_ids / facets_per_page)
       updateSliderInput(session, "page", min = 1, max = num_pages, value = 1)
+      NULL
     })
     
     # Dynamically calculate PK/PD model outputs
@@ -148,7 +150,7 @@ expServer <- function(id, results, UI) {
         theme_minimal() +
         theme(plot.title = element_text(hjust = 0.5))
         
-        print(plot)
+        
     })
   })
 }
