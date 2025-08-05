@@ -47,6 +47,32 @@ results <- list(
   }
 )
 
+# Define the plot module UI
+plotModuleUI <- function(id) {
+  ns <- NS(id) # Namespace for the module
+  tagList(
+    plotOutput(ns("plot")) # Output placeholder for the plot
+  )
+}
+
+# Define the plot module server 
+plotModuleServer <- function(id, data) {
+  moduleServer(id, function(input, output, session) {
+    ns <- session$ns
+    output$plot <- renderPlot({
+      ggplot(data, aes(x = TIME, y = effect)) +
+        geom_point(color = "blue", size = 3, alpha = 0.8) +
+        facet_wrap_paginate(~ID, ncol = 2, nrow = 2, page = input$page) +
+        labs(
+          title = paste("Explore PK/PD Data - Page", input$page),
+          x = "Time",
+          y = "Effect"
+        ) +
+        theme_minimal() +
+        theme(plot.title = element_text(hjust = 0.5))
+    })
+  })
+}
 # UI Module for Explore Data
 expUI <- function(id) {
   ns <- NS(id)
@@ -72,10 +98,13 @@ expUI <- function(id) {
       )
     ),
     fluidRow(
-      column(12,tableOutput(ns("dataPreview")))
+      column(12, tableOutput(ns("dataPreview")))
     ),
     fluidRow(
-      column(12,tableOutput(ns("dataPlot")))
+      column(12, plotOutput(ns("dataPlot")))
+    ),
+    fluidRow(
+      column(12, plotModuleUI(ns("dataModulePlot")))
     )
   )
 }
@@ -150,7 +179,7 @@ expServer <- function(id, results, UI) {
         theme_minimal() +
         theme(plot.title = element_text(hjust = 0.5))
         
-        
+      
     })
   })
 }
