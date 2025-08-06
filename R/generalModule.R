@@ -157,6 +157,7 @@ nlmixr2model <- function() {
     pkprServer("modelProperty", results)
     ParEstServer("parameterEstimate", results)
     covServer("covariancEstimate", results)
+    expServer("exploreData", results)
 
     # Monitor active tab and update results based on the selected tab
     observeEvent(input$mainTabs, {
@@ -176,16 +177,22 @@ nlmixr2model <- function() {
         results$ParaEstim <- NULL
         req(results$pkpdm)
 
-        waiter_hide()
+        
       } else if (tab == "Statistical Model") {
         calculatingInitialModel(results)
-
+        calculatingParameterEstimate(results)
         calculatingStatisticalModel(results)
         req(results$parEstim)
 
-
-
-
+    } else if (tab == "Explore Data") {
+        calculatingInitialModel(results)
+      calculatingParameterEstimate(results)
+        calculatingStatisticalModel(results)
+        req(results$parEstim)
+        print(results$forCov)
+        
+        
+        
       }
     })
 
