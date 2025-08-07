@@ -80,16 +80,17 @@ expServer <- function(id, results) {
         dataset <- getDataForExploration(input$dataset)
         
         # Validate columns
-        requiredCols <- c("ID", "TIME", "AMT", "EVID", "CMT")
+        requiredCols <- c("ID", "TIME", "AMT", "EVID", "CMT", "DV")
         if (!all(requiredCols %in% names(dataset))) {
           stop(paste("Dataset must include columns:", paste(requiredCols, collapse = ", ")))
         }
         
         # Solve the dataset
-        s = rxSolve(results$forCov, dataset)
-        print(s)
-        #print(results$forCov)
-        #print(dataset)
+        print(results$forCov)
+        s = rxSolve(results$forCov, dataset, keep = "DV")
+        
+        # Store the results 
+        results$s = s
         # Save dataset
         selectedData(dataset)
         
@@ -104,42 +105,46 @@ expServer <- function(id, results) {
       })
     })
     
+  
     # Reactive: Solve the model
-    augmentedDataset <- reactive({
-      req(selectedData())
-      dataset <- selectedData()
-      
-      tryCatch({
-        suppressMessages(rxSolve(model, dataset))
-      }, error = function(e) {
-        showNotification(paste("Model error:", e$message), type = "error")
-        NULL
-      })
-    })
+    # augmentedDataset <- reactive({
+    #   req(selectedData())
+    #   dataset <- selectedData()
+    #   
+    #   tryCatch({
+    #     suppressMessages(rxSolve(model, dataset))
+    #   }, error = function(e) {
+    #     showNotification(paste("Model error:", e$message), type = "error")
+    #     NULL
+    #   })
+    # })
     
-    plot(ggplot())
+    
     # Render the PK/PD plot
     output$dataPlot <- renderPlot({
-      req(augmentedDataset())
-      validate(need(nrow(augmentedDataset()) > 0, "No data to plot"))
-      
-      ggplot(augmentedDataset(), aes(x = TIME, y = effect, color = factor(doseType))) +
-        geom_point(size = 3, alpha = 0.8) +
-        facet_wrap_paginate(~ID, ncol = 2, nrow = 2, page = input$page) +
-        labs(
-          title = paste("Explore PK/PD Data - Page", input$page),
-          x = "Time",
-          y = "Effect",
-          color = "Dose Type"
-        ) +
-        theme_minimal() +
-        theme(plot.title = element_text(hjust = 0.5))
+      req(results$s)
+      print(results$s)
+      gg = ggplot(results$s, aes(x = time, y = DV)) +
+        geom_point() +
+        ggforce::facet_wrap_paginate(~id, ncol = 2, nrow = 2, page = input$page) +
+        geom_line(aes(x = time, y = ipredSim)) +
+        rxode2::rxTheme()
+     # gg = ggplot(results$s, aes(x = time, y = ipredSim )) +
+     #    geom_point(aes(x= time, y = DV), size = 3, alpha = 0.8) +
+     #    geom_line() +
+     #    facet_wrap_paginate(id, ncol = 2, nrow = 2, page = input$page) +
+     #    labs(
+     #      title = paste("Explore PK/PD Data - Page", input$page),
+     #      x = "Time",
+     #      y = "ipredSim",
+     #      
+     #    ) +
+     #    theme_minimal() +
+     #    theme(plot.title = element_text(hjust = 0.5))
+     print(gg)
+     gg
     })
     
-    # Data preview for debugging
-    output$dataPreview <- renderDT({
-      req(augmentedDataset())
-      head(augmentedDataset(), 50)
-    })
+    
   })
 }
