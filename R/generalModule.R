@@ -189,7 +189,7 @@ nlmixr2model <- function() {
       calculatingParameterEstimate(results)
         calculatingStatisticalModel(results)
         req(results$parEstim)
-        print(results$forCov)
+        
         
         
         
