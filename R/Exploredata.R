@@ -54,14 +54,21 @@ expUI <- function(id) {
     ),
     br(),
     fluidRow(
+      column(12, uiOutput(ns("parameterSliders")))
+    ),
+    
+    br(),
+    
+    fluidRow(
       column(12, plotOutput(ns("dataPlot")))
     ),
+    
     br(),
+    
     fluidRow(
-      column(12, DTOutput(ns("dataPreview"))) # Show first 50 rows of rxSolve result
-    )
+      column(12, DTOutput(ns("dataPreview")))
   )
-}
+)}
 
 #--------------------------------------------------
 # 4. Server Module
@@ -69,6 +76,9 @@ expUI <- function(id) {
 expServer <- function(id, results) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
+    
+    # Reactive values for storing model and simulation output
+    rxState <- reactiveValues(model = NULL, solved = NULL)
     
     # Reactive storage for selected dataset
     selectedData <- reactiveVal(NULL)
@@ -85,10 +95,50 @@ expServer <- function(id, results) {
           stop(paste("Dataset must include columns:", paste(requiredCols, collapse = ", ")))
         }
         
+        print(results$forCov$iniDf)
+        # Render UI for parameter sliders
+        output$parameterSliders <- renderUI({
+          req(results$forCov)
+          iniDf <- results$forCov$iniDf
+          
+          validate(need(nrow(iniDf) > 0, "Model contains no parameters."))
+          
+          sliders <- lapply(seq_len(nrow(iniDf)), function(i) {
+            row <- iniDf[i, ]
+            
+            if (is.null(row$est) || is.na(row$est)) return(NULL)  # skip if no initial value
+            
+            # Rule-based bounds if missing or infinite
+            lower <- if (!is.na(row$lower) && is.finite(row$lower)) row$lower else row$est * 0.5
+            upper <- if (!is.na(row$upper) && is.finite(row$upper)) row$upper else row$est * 1.5
+            
+            # Catch case where est = 0 (e.g., propSd)
+            if (row$est == 0) {
+              lower <- 0.01
+              upper <- 1
+            }
+            
+            # Force fallback values if still invalid
+            if (!is.finite(lower) || !is.finite(upper) || lower >= upper) {
+              lower <- 0.1
+              upper <- 10
+            }
+            sliderInput(
+              inputId = ns(paste0("slider_", row$name)),
+              label = paste("Parameter:", row$name),
+              min = 0.9 * row$est,
+              max = 1.1 * row$est,
+              value = row$est,
+              step = 0.01 * row$est
+            )
+          })
+          
+          do.call(tagList, sliders)
+        })
+            
         # Solve the dataset
         print(results$forCov)
         s = rxSolve(results$forCov, dataset, keep = "DV")
-        
         # Store the results 
         results$s = s
         # Save dataset
