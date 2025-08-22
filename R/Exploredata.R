@@ -56,6 +56,7 @@ expUI <- function(id) {
     fluidRow(
       column(12, uiOutput(ns("parameterSliders")))
     ),
+    actionButton(ns("updateModel"), "Update Model with Sliders", class = "btn-success"),
     
     br(),
     
@@ -135,7 +136,31 @@ expServer <- function(id, results) {
           
           do.call(tagList, sliders)
         })
-            
+        
+        observeEvent(input$updateModel, {
+          req(results$forCov)
+          req(selectedData())
+          
+          iniDf <- results$forCov$iniDf
+          
+          # Create a copy to modify 
+          newIni <- iniDf
+          
+          for (i in seq_len(nrow(newIni))) {
+            paramName <- newIni$name[i]
+            sliderId <- paste0("slider_", paramName)
+            if (!is.null(input[[sliderId]])) {
+              newIni$est[i] <- input[[sliderId]]
+            }
+          }
+          
+          # Update the model parameters 
+          ini(results$forCov) <- newIni
+          
+          # Rerun simulation 
+          newSim <- rxSolve(results$forCov, selectedData(), keep = "DV")
+          results$s <- newSim
+        })   
         # Solve the dataset
         print(results$forCov)
         s = rxSolve(results$forCov, dataset, keep = "DV")
