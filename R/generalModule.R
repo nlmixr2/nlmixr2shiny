@@ -76,12 +76,10 @@ calculatingParameterEstimate <-function(results) {
 #'
 #' @return A Shiny UI object.
 #' @import shiny
-#' @import shinyjs
-#' @import shinyWidgets
 #' @export
 nlmixr2model <- function() {
   ui <- fluidPage(
-    useShinyjs(),
+    shinyjs::useShinyjs(),
     waiter::useWaiter(),
 
     # Custom CSS to manage margins and enhance the display

@@ -63,7 +63,7 @@ pipeAllProp <- function(df){
 pkprUI <- function(id) {
   ns <- NS(id)
   tagList(
-    useShinyjs(),
+    shinyjs::useShinyjs(),
     titlePanel("Add model Properties"),
     mainPanel(
       fluidRow(

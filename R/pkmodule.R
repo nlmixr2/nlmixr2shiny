@@ -3,7 +3,7 @@
 pkUI <- function(id) {
   ns <- NS(id)
   tagList(
-    materialSwitch(ns("pk_switch"), label = "PK", value = TRUE),
+    shinyWidgets::materialSwitch(ns("pk_switch"), label = "PK", value = TRUE),
     conditionalPanel(
       condition = paste0("input['", ns("pk_switch"), "']"),
       fluidRow(
@@ -29,7 +29,7 @@ pkUI <- function(id) {
         )
       )
     ),
-    materialSwitch(ns("pd_switch"), label = "PD", value = FALSE),
+    shinyWidgets::materialSwitch(ns("pd_switch"), label = "PD", value = FALSE),
     conditionalPanel(
       condition = paste0("input['", ns("pd_switch"), "']"),
       fluidRow(
