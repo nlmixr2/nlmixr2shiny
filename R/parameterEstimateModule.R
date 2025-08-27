@@ -94,15 +94,18 @@ generateChangeMessages <- function(df, modDF) {
       upper <- ifelse(!is.na(modDF$upper[rowNumber])||modDF$upper[rowNumber]==0, modDF$upper[rowNumber], Inf)
       trUpper <- ifelse(!is.na(modDF$Trans.Upper[rowNumber]), modDF$Trans.Upper[rowNumber], 1)
       trLower <- ifelse(!is.na(modDF$Trans.Lower[rowNumber]), modDF$Trans.Lower[rowNumber], 0)
-      
+
       if (transValue %in% c("", "Normal", "Untransformed")) {
         pipen <- c(pipen, paste0("model(", lhs, "=", name, ")"))
       } else if (transValue %in% c("exp", "LogNormal")) {
         pipen <- c(pipen, paste0("model(", lhs, "=exp(", name, "))"))
+        
       } else if (transValue %in% c("expit", "LogitNormal")) {
         pipen <- c(pipen, paste0("model(", lhs, "=expit(", name, ",", trLower, ",", trUpper, "))"))
+        
       } else if (transValue %in% c("probitInv", "ProbitNormal")) {
         pipen <- c(pipen, paste0("model(", lhs, "=probitInv(", name, ",", trLower, ",", trUpper, "))"))
+        
       }
     }
     
@@ -115,7 +118,15 @@ generateChangeMessages <- function(df, modDF) {
       upper <- ifelse(!is.na(modDF$upper[rowNumber])||modDF$upper[rowNumber]==0, modDF$upper[rowNumber], Inf)
       trUpper <- ifelse(!is.na(modDF$Trans.Upper[rowNumber]), modDF$Trans.Upper[rowNumber], 1)
       trLower <- ifelse(!is.na(modDF$Trans.Lower[rowNumber]), modDF$Trans.Lower[rowNumber], 0)
+
       
+      if (is.na(upper)){
+        upper <- Inf
+      }
+      
+      if (is.na(lower)){
+        lower <- -Inf
+      }
       if (transValue %in% c("", "Normal", "Untransformed")) {
         pipen <- c(pipen, paste0("ini(", name, "=c(", lower, ",", est, ",", upper, "))"))
       } else if (transValue %in% c("LogNormal")) {
@@ -129,7 +140,8 @@ generateChangeMessages <- function(df, modDF) {
                                  "probit(", est, ",", trLower, ",", trUpper, "),",
                                  "probit(", upper, ",", trLower, ",", trUpper, ")))"))
       }
-    }
+    } 
+    
     
     # Handle changes in 'est' or 'Trans.' for Fixed=TRUE
     if (("est" %in% columnList || "Trans." %in% columnList) && modDF$fix[rowNumber] == TRUE) {
@@ -181,8 +193,8 @@ ParEstUI <- function(id) {
   tagList(
     h3("Parameter Estimate"),
     rHandsontableOutput(ns("initalEstimates")),
-    h3("Modified Rows"),
-    rHandsontableOutput(ns("changedEstimates")),
+    # h3("Modified Rows"),
+    # rHandsontableOutput(ns("changedEstimates")),
     fluidRow(
       column(12, actionButton(ns("copy_code"), "Copy Model Code"))  # Added the copy code button
     )
@@ -202,14 +214,13 @@ ParEstServer <- function(id, results) {
       req(results$parEstim)
       df <- getRhandsontable(results$parEstim) |>
         transformDF()
-      df$Eta <- rep("No Variability", nrow(df))
-      
+      df$Eta <- FALSE 
       parEstDF(df)
       
       output$initalEstimates <- renderRHandsontable({
         rhandsontable(df[!is.na(df$lhs), ], rowHeaders = FALSE) %>%
           hot_col("Trans.", type = "dropdown", source = c("LogNormal", "LogitNormal", "ProbitNormal", "Normal"), allowInvalid = TRUE) %>%
-          hot_col("Eta", type = "dropdown", source = c("Between subject variabilities", "No Variability"), allowInvalid = TRUE) %>%
+          hot_col("Eta", type = "checkbox") %>%
           hot_col("lower", type = "numeric", allowInvalid = TRUE) %>%
           hot_col("upper", type = "numeric", allowInvalid = TRUE)
       })
@@ -267,3 +278,5 @@ ParEstServer <- function(id, results) {
     })
   })
 }
+
+ 

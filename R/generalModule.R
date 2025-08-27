@@ -1,4 +1,82 @@
+#' This function is supposed to calculate the initial model.
+#'
+#' @param results The Shiny lists that contains the results.
+#'
+#' @return nothing called for side effects
+#' @noRd
+#'
+#'
+calculatingInitialModel <-function(results){
+  if (is.null(results$pkpdm)){
+
+    waiter_show(html = tagList(
+      spin_fading_circles(),  # A nice spinning loading indicator
+      h4("Calculating initial model...")
+    ))
+
+    # Evaluate pipeline for results$pkpdm
+
+    results$pkpdm <- eval(str2lang(results$pkpdpipe))
+
+    waiter_hide()
+  }
+}
+
+
+#' This function is supposed to calculate the statistical model.
+#'
+#' @param results This Shiny list contains the results.
+#'
+#' @return nothing called for side effects
+#' @noRd
+#'
+#'
+calculatingStatisticalModel <-function(results){
+  if (is.null(results$forCov)){
+    waiter_show(html = tagList(
+      spin_fading_circles(),  # A nice spinning loading indicator
+      h4("Calculating statistical model...")
+    ))
+
+    # Evaluate the pipeline for results$forCov
+    results$forCov <- eval(str2lang(paste(c("results$parEstim", results$ParEstimates), collapse = "|>\n\t")))
+
+    waiter_hide()
+  }
+  
+  calculatingExploreData <-function(results) {
+    if(is.null(results$forCov)){
+      waiter_show(html = tagList(
+        spin_seven_circle(), # A nice spinning loading indicator
+        h4("Calculating explore data...")
+      ))
+      
+      # Evaluate the pipeline for results$forCov
+      results$forCov <- eval(str2lang(paste(c("results$parEstim", results$ParEstimates), collapse = "|>\n\t")))
+      
+      waiter_hide()
+    }
+  }
+}
+
+calculatingParameterEstimate <-function(results) {
+  if (is.null(results$ParaEstim)) {
+    waiter_show(html = tagList(
+      spin_fading_circles(),  # A nice spinning loading indicator
+      h4("Calculating parameter estimates...")
+    ))
+
+    # Evaluate the pipeline for results$ParaEstim
+    results$parEstim <- eval(str2lang(paste(c("results$pkpdm", results$modProp), collapse = "|>\n\t")))
+
+    waiter_hide()
+  }
+
+}
+
+
 #' The nlmixr2model function
+#'
 #'
 #' @description The main UI function for the nlmixr2Shiny app using Shiny (no miniUI).
 #'
@@ -53,7 +131,10 @@ nlmixr2model <- function() {
       tabPanel("Parameter Estimate", icon = icon("calculator"), ParEstUI("parameterEstimate")),
 
       # Tab for Statistical Model
-      tabPanel("Statistical Model", icon = icon("chart-bar"), covUI("covariancEstimate"))
+      tabPanel("Statistical Model", icon = icon("chart-bar"), covUI("covariancEstimate")),
+      
+      # Tab for Explore Data
+      tabPanel("Explore Data", icon = icon("play"), expUI("exploreData"))
 
       # Additional tab for Simulation if needed
       # tabPanel("Simulation", icon = icon("play"), pksimUI("simulation"))
@@ -67,7 +148,8 @@ nlmixr2model <- function() {
       pkpdm = NULL,
       modProp = NULL,
       parEst = NULL,
-      covarianceMat = NULL
+      covarianceMat = NULL,
+      forCov = NULL # This is supposed to match calculations in 'calculatingStatisticalModel
     )
 
     # Call the respective server modules
@@ -75,59 +157,54 @@ nlmixr2model <- function() {
     pkprServer("modelProperty", results)
     ParEstServer("parameterEstimate", results)
     covServer("covariancEstimate", results)
+    expServer("exploreData", results)
 
     # Monitor active tab and update results based on the selected tab
     observeEvent(input$mainTabs, {
       tab <- input$mainTabs
 
-      if (tab == "Model Property") {
-        waiter_show(html = tagList(
-          spin_fading_circles(),  # A nice spinning loading indicator
-          h4("Calculating, please wait...")
-        ))
-
-        # Evaluate pipeline for results$pkpdm
-        results$pkpdm <- eval(str2lang(results$pkpdpipe))
-        waiter_hide()
-      }
 
       if (tab == "PKPD Model") {
-
+        results$parEst <- NULL
         results$modProp <- NULL
         results$pkpdm <- NULL
       } else if (tab == "Model Property") {
+        calculatingInitialModel(results)
         results$parEst <- NULL
       } else if (tab == "Parameter Estimate") {
-        waiter_show(html = tagList(
-          spin_fading_circles(),  # A nice spinning loading indicator
-          h4("Calculating, please wait...")
-        ))
+        calculatingInitialModel(results)
+        calculatingParameterEstimate(results)
+        results$ParaEstim <- NULL
         req(results$pkpdm)
-        results$parEstim <- eval(str2lang(paste(c("results$pkpdm", results$modProp), collapse = "|>\n\t")))
-        waiter_hide()
+
+        
       } else if (tab == "Statistical Model") {
-        waiter_show(html = tagList(
-          spin_fading_circles(),  # A nice spinning loading indicator
-          h4("Calculating, please wait...")
-        ))
+        calculatingInitialModel(results)
+        calculatingParameterEstimate(results)
+        calculatingStatisticalModel(results)
         req(results$parEstim)
-        results$forCov <- eval(str2lang(paste(c("results$parEstim", results$ParEstimates), collapse = "|>\n\t")))
-        waiter_hide()
+
+    } else if (tab == "Explore Data") {
+        calculatingInitialModel(results)
+      calculatingParameterEstimate(results)
+        calculatingStatisticalModel(results)
+        req(results$parEstim)
+        
+        
+        
+        
       }
     })
+
+
   }
 
+
   shiny::runGadget(ui, server, viewer = shiny::dialogViewer(
-    dialogName = "NLMixR2Shiny",
+    dialogName = "nlmixr2shiny",
     width = 4500,
     height = 3500
   ))
 
 
 }
-
-
-
-
-
-
