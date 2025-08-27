@@ -3,25 +3,21 @@
 #' @param results The Shiny lists that contains the results.
 #'
 #' @return nothing called for side effects
+#'
 #' @noRd
-#'
-#'
 calculatingInitialModel <-function(results){
   if (is.null(results$pkpdm)){
-
-    waiter_show(html = tagList(
-      spin_fading_circles(),  # A nice spinning loading indicator
+    waiter::waiter_show(html = tagList(
+      waiter::spin_fading_circles(),  # A nice spinning loading indicator
       h4("Calculating initial model...")
     ))
 
     # Evaluate pipeline for results$pkpdm
-
     results$pkpdm <- eval(str2lang(results$pkpdpipe))
 
-    waiter_hide()
+    waiter::waiter_hide()
   }
 }
-
 
 #' This function is supposed to calculate the statistical model.
 #'
@@ -29,47 +25,45 @@ calculatingInitialModel <-function(results){
 #'
 #' @return nothing called for side effects
 #' @noRd
-#'
-#'
 calculatingStatisticalModel <-function(results){
   if (is.null(results$forCov)){
-    waiter_show(html = tagList(
-      spin_fading_circles(),  # A nice spinning loading indicator
+    waiter::waiter_show(html = tagList(
+      waiter::spin_fading_circles(),  # A nice spinning loading indicator
       h4("Calculating statistical model...")
     ))
 
     # Evaluate the pipeline for results$forCov
     results$forCov <- eval(str2lang(paste(c("results$parEstim", results$ParEstimates), collapse = "|>\n\t")))
 
-    waiter_hide()
+    waiter::waiter_hide()
   }
 
   calculatingExploreData <-function(results) {
-    if(is.null(results$forCov)){
-      waiter_show(html = tagList(
-        spin_seven_circle(), # A nice spinning loading indicator
+    if(is.null(results$forCov)) {
+      waiter::waiter_show(html = tagList(
+        waiter::spin_seven_circle(), # A nice spinning loading indicator
         h4("Calculating explore data...")
       ))
 
       # Evaluate the pipeline for results$forCov
       results$forCov <- eval(str2lang(paste(c("results$parEstim", results$ParEstimates), collapse = "|>\n\t")))
 
-      waiter_hide()
+      waiter::waiter_hide()
     }
   }
 }
 
 calculatingParameterEstimate <-function(results) {
   if (is.null(results$ParaEstim)) {
-    waiter_show(html = tagList(
-      spin_fading_circles(),  # A nice spinning loading indicator
+    waiter::waiter_show(html = tagList(
+      waiter::spin_fading_circles(),  # A nice spinning loading indicator
       h4("Calculating parameter estimates...")
     ))
 
     # Evaluate the pipeline for results$ParaEstim
     results$parEstim <- eval(str2lang(paste(c("results$pkpdm", results$modProp), collapse = "|>\n\t")))
 
-    waiter_hide()
+    waiter::waiter_hide()
   }
 
 }
@@ -83,15 +77,12 @@ calculatingParameterEstimate <-function(results) {
 #' @return A Shiny UI object.
 #' @import shiny
 #' @import shinyjs
-#' @import waiter
 #' @import shinyWidgets
-#' @import nlmixr2lib
 #' @export
 nlmixr2model <- function() {
-  library(nlmixr2lib)
   ui <- fluidPage(
     useShinyjs(),
-    useWaiter(),
+    waiter::useWaiter(),
 
     # Custom CSS to manage margins and enhance the display
     tags$style(HTML("
@@ -126,7 +117,8 @@ nlmixr2model <- function() {
       tabPanel("Model Property", icon = icon("wrench"), pkprUI("modelProperty")),
 
       # Tab for Parameter Estimate
-      tabPanel("Parameter Estimate", icon = icon("calculator"), ParEstUI("parameterEstimate")),
+      tabPanel("Parameter Estimate", icon = icon("calculator"),
+               ParEstUI("parameterEstimate")),
 
       # Tab for Statistical Model
       tabPanel("Statistical Model", icon = icon("chart-bar"), covUI("covariancEstimate")),
@@ -182,21 +174,14 @@ nlmixr2model <- function() {
         calculatingStatisticalModel(results)
         req(results$parEstim)
 
-    } else if (tab == "Explore Data") {
+      } else if (tab == "Explore Data") {
         calculatingInitialModel(results)
-      calculatingParameterEstimate(results)
+        calculatingParameterEstimate(results)
         calculatingStatisticalModel(results)
         req(results$parEstim)
-
-
-
-
       }
     })
-
-
   }
-
 
   shiny::runGadget(ui, server, viewer = shiny::dialogViewer(
     dialogName = "nlmixr2shiny",

@@ -179,8 +179,8 @@ pkServer <- function(id, results) {
 
 
     observeEvent(input$copy_code, {
-      waiter_show(html = tagList(
-        spin_fading_circles(),  # A nice spinning loading indicator
+      waiter::waiter_show(html = tagList(
+        waiter::spin_fading_circles(),  # A nice spinning loading indicator
         h4("Calculating, please wait...")
       ))
       req(results$pkpdpipe)
@@ -191,7 +191,7 @@ pkServer <- function(id, results) {
       # Copy code to the R script using rstudioapi::insertText
       rstudioapi::insertText(text =paste("mod1 <- ", code_to_copy))
 
-      waiter_hide()  # Hide the spinner after the code is copied
+      waiter::waiter_hide()  # Hide the spinner after the code is copied
 
       # Close the app
       stopApp()

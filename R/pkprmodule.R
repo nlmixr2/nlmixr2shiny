@@ -203,14 +203,14 @@ pkprServer <- function(id, results) {
 
     # Copy model code button functionality
     observeEvent(input$copy_code, {
-      waiter_show(html = tagList(
-        spin_fading_circles(),  # A nice spinning loading indicator
+      waiter::waiter_show(html = tagList(
+        waiter::spin_fading_circles(),  # A nice spinning loading indicator
         h4("Calculating, please wait...")
       ))
       model_code <- paste("mod1 <- ",deparse(as.function(eval(str2lang(paste(c("results$pkpdm", results$modProp), collapse = "|>\n\t"))))), collapse="\n")
       rstudioapi::insertText(model_code)
 
-      waiter_hide()
+      waiter::waiter_hide()
       stopApp()  # Close the app after the code is copied
     })
   })

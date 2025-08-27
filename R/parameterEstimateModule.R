@@ -216,10 +216,10 @@ ParEstServer <- function(id, results) {
       parEstDF(df)
 
       output$initalEstimates <- rhandsontable::renderRHandsontable({
-        rhandsontable::rhandsontable(df[!is.na(df$lhs), ], rowHeaders = FALSE) %>%
-          rhandsontable::hot_col("Trans.", type = "dropdown", source = c("LogNormal", "LogitNormal", "ProbitNormal", "Normal"), allowInvalid = TRUE) %>%
-          rhandsontable::hot_col("Eta", type = "checkbox") %>%
-          rhandsontable::hot_col("lower", type = "numeric", allowInvalid = TRUE) %>%
+        rhandsontable::rhandsontable(df[!is.na(df$lhs), ], rowHeaders = FALSE) |>
+          rhandsontable::hot_col("Trans.", type = "dropdown", source = c("LogNormal", "LogitNormal", "ProbitNormal", "Normal"), allowInvalid = TRUE) |>
+          rhandsontable::hot_col("Eta", type = "checkbox") |>
+          rhandsontable::hot_col("lower", type = "numeric", allowInvalid = TRUE) |>
           rhandsontable::hot_col("upper", type = "numeric", allowInvalid = TRUE)
       })
     })
@@ -256,8 +256,8 @@ ParEstServer <- function(id, results) {
     # Copy model code button functionality
     observeEvent(input$copy_code, {
       # Show the waiter spinner while generating the code
-      waiter_show(html = tagList(
-        spin_fading_circles(),
+      waiter::waiter_show(html = tagList(
+        waiter::spin_fading_circles(),
         h4("Calculating, please wait...")
       ))
 
@@ -271,7 +271,7 @@ ParEstServer <- function(id, results) {
       rstudioapi::insertText(model_code)
 
       # Hide the spinner and stop the app
-      waiter_hide()
+      waiter::waiter_hide()
       stopApp()
     })
   })

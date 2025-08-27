@@ -44,7 +44,7 @@ covServer <- function(id, results) {
       # Set row names as column names for the table
       colnames(df) <- rownames(df)
 
-      rhandsontable::rhandsontable(df) %>%
+      rhandsontable::rhandsontable(df) |>
         rhandsontable::hot_cols(renderer = "
           function (instance, td, row, col, prop, value, cellProperties) {
             Handsontable.renderers.TextRenderer.apply(this, arguments);
@@ -81,9 +81,8 @@ covServer <- function(id, results) {
 
     # JavaScript to handle the copy-to-clipboard functionality
     observeEvent(input$copy_code, {
-
-      waiter_show(html = tagList(
-        spin_fading_circles(),
+      waiter::waiter_show(html = tagList(
+        waiter::spin_fading_circles(),
         h4("Calculating, please wait...")
       ))
       session$sendCustomMessage(type = "copyToClipboard", message = list(text = input$expressionOutput))
@@ -92,7 +91,7 @@ covServer <- function(id, results) {
       if (rstudioapi::isAvailable()) {
         rstudioapi::insertText(text = paste("mod1 <- ",results$expressionOutput))
 
-        waiter_hide()
+        waiter::waiter_hide()
 
         shiny::stopApp()
       }
