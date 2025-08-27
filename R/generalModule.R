@@ -119,10 +119,10 @@ nlmixr2model <- function() {
                ParEstUI("parameterEstimate")),
 
       # Tab for Statistical Model
-      tabPanel("Statistical Model", icon = icon("chart-bar"), covUI("covariancEstimate")),
+      tabPanel("Statistical Model", icon = icon("chart-bar"), covUI("covariancEstimate"))## ,
 
       # Tab for Explore Data
-      tabPanel("Explore Data", icon = icon("play"), expUI("exploreData"))
+      ## tabPanel("Explore Data", icon = icon("play"), expUI("exploreData"))
 
       # Additional tab for Simulation if needed
       # tabPanel("Simulation", icon = icon("play"), pksimUI("simulation"))
@@ -171,7 +171,6 @@ nlmixr2model <- function() {
         calculatingParameterEstimate(results)
         calculatingStatisticalModel(results)
         req(results$parEstim)
-
       } else if (tab == "Explore Data") {
         calculatingInitialModel(results)
         calculatingParameterEstimate(results)
