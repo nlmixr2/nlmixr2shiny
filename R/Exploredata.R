@@ -2,7 +2,7 @@
 #'
 #' @return A character vector of the names of the data sets.
 #' @noRd
-#' @author Dyani Peterson 
+#' @author Dyani Peterson
 #' @examples
 #' getDataNamesForExploration()
 
@@ -57,17 +57,17 @@ expUI <- function(id) {
       column(12, uiOutput(ns("parameterSliders")))
     ),
     actionButton(ns("updateModel"), "Update Model with Sliders", class = "btn-success"),
-    
+
     br(),
-    
+
     fluidRow(
       column(12, plotOutput(ns("dataPlot")))
     ),
-    
+
     br(),
-    
+
     fluidRow(
-      column(12, DTOutput(ns("dataPreview")))
+      column(12, DT::DTOutput(ns("dataPreview")))
   )
 )}
 
@@ -77,48 +77,48 @@ expUI <- function(id) {
 expServer <- function(id, results) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
-    
+
     # Reactive values for storing model and simulation output
     rxState <- reactiveValues(model = NULL, solved = NULL)
-    
+
     # Reactive storage for selected dataset
     selectedData <- reactiveVal(NULL)
-    
+
     # Load dataset on button click
     observeEvent(input$loadData, {
       req(input$dataset)
       tryCatch({
         dataset <- getDataForExploration(input$dataset)
-        
+
         # Validate columns
         requiredCols <- c("ID", "TIME", "AMT", "EVID", "CMT", "DV")
         if (!all(requiredCols %in% names(dataset))) {
           stop(paste("Dataset must include columns:", paste(requiredCols, collapse = ", ")))
         }
-        
+
         print(results$forCov$iniDf)
         # Render UI for parameter sliders
         output$parameterSliders <- renderUI({
           req(results$forCov)
           iniDf <- results$forCov$iniDf
-          
+
           validate(need(nrow(iniDf) > 0, "Model contains no parameters."))
-          
+
           sliders <- lapply(seq_len(nrow(iniDf)), function(i) {
             row <- iniDf[i, ]
-            
+
             if (is.null(row$est) || is.na(row$est)) return(NULL)  # skip if no initial value
-            
+
             # Rule-based bounds if missing or infinite
             lower <- if (!is.na(row$lower) && is.finite(row$lower)) row$lower else row$est * 0.5
             upper <- if (!is.na(row$upper) && is.finite(row$upper)) row$upper else row$est * 1.5
-            
+
             # Catch case where est = 0 (e.g., propSd)
             if (row$est == 0) {
               lower <- 0.01
               upper <- 1
             }
-            
+
             # Force fallback values if still invalid
             if (!is.finite(lower) || !is.finite(upper) || lower >= upper) {
               lower <- 0.1
@@ -133,19 +133,19 @@ expServer <- function(id, results) {
               step = 0.01 * row$est
             )
           })
-          
+
           do.call(tagList, sliders)
         })
-        
+
         observeEvent(input$updateModel, {
           req(results$forCov)
           req(selectedData())
-          
+
           iniDf <- results$forCov$iniDf
-          
-          # Create a copy to modify 
+
+          # Create a copy to modify
           newIni <- iniDf
-          
+
           for (i in seq_len(nrow(newIni))) {
             paramName <- newIni$name[i]
             sliderId <- paste0("slider_", paramName)
@@ -153,39 +153,39 @@ expServer <- function(id, results) {
               newIni$est[i] <- input[[sliderId]]
             }
           }
-          
-          # Update the model parameters 
+
+          # Update the model parameters
           ini(results$forCov) <- newIni
-          
-          # Rerun simulation 
+
+          # Rerun simulation
           newSim <- rxSolve(results$forCov, selectedData(), keep = "DV")
           results$s <- newSim
-        })   
+        })
         # Solve the dataset
         print(results$forCov)
         s = rxSolve(results$forCov, dataset, keep = "DV")
-        # Store the results 
+        # Store the results
         results$s = s
         # Save dataset
         selectedData(dataset)
-        
+
         # Update pagination slider
         num_ids <- length(unique(dataset$ID))
         facets_per_page <- 4
         num_pages <- ceiling(num_ids / facets_per_page)
         updateSliderInput(session, "page", min = 1, max = num_pages, value = 1)
-        
+
       }, error = function(e) {
         showNotification(paste("Error loading dataset:", e$message), type = "error")
       })
     })
-    
-  
+
+
     # Reactive: Solve the model
     # augmentedDataset <- reactive({
     #   req(selectedData())
     #   dataset <- selectedData()
-    #   
+    #
     #   tryCatch({
     #     suppressMessages(rxSolve(model, dataset))
     #   }, error = function(e) {
@@ -193,8 +193,8 @@ expServer <- function(id, results) {
     #     NULL
     #   })
     # })
-    
-    
+
+
     # Render the PK/PD plot
     output$dataPlot <- renderPlot({
       req(results$s)
@@ -212,14 +212,14 @@ expServer <- function(id, results) {
      #      title = paste("Explore PK/PD Data - Page", input$page),
      #      x = "Time",
      #      y = "ipredSim",
-     #      
+     #
      #    ) +
      #    theme_minimal() +
      #    theme(plot.title = element_text(hjust = 0.5))
      print(gg)
      gg
     })
-    
-    
+
+
   })
 }

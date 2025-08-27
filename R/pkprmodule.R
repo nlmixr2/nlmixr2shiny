@@ -63,7 +63,7 @@ pipeAllProp <- function(df){
 pkprUI <- function(id) {
   ns <- NS(id)
   tagList(
-    useShinyjs(),
+    shinyjs::useShinyjs(),
     titlePanel("Add model Properties"),
     mainPanel(
       fluidRow(
@@ -74,7 +74,7 @@ pkprUI <- function(id) {
         column(5, uiOutput(ns("property_ui")),
                style="column-width:45%; vertical-align: middle; align: center")
       ),
-      fluidRow(column(12, DTOutput(ns("table_output")))),
+      fluidRow(column(12, DT::DTOutput(ns("table_output")))),
       fluidRow(
         column(12, HTML("&nbsp;"))
       ),
@@ -159,7 +159,7 @@ pkprServer <- function(id, results) {
     })
 
     # Render data table
-    output$table_output <- renderDT({
+    output$table_output <- DT::renderDT({
       td <- table_data()
       td0 <- modelPropIni(results$pkpdm$props$cmtProp)
       if (inherits(td, "data.frame") && nrow(td) > 0) {
@@ -184,8 +184,11 @@ pkprServer <- function(id, results) {
           td <- data.frame(Compartment = character(0), Property = character(0), Remove = character(0), stringsAsFactors = FALSE)
         }
       }
-      datatable(td, escape = FALSE, selection = 'none', rownames = FALSE,
-                options = list(dom = 't', ordering = FALSE, paging = FALSE))
+      DT::datatable(td, escape = FALSE, selection = 'none',
+                    rownames = FALSE,
+                    options = list(dom = 't',
+                                   ordering = FALSE,
+                                   paging = FALSE))
     })
 
     # Handling delete button click in the table
@@ -200,14 +203,14 @@ pkprServer <- function(id, results) {
 
     # Copy model code button functionality
     observeEvent(input$copy_code, {
-      waiter_show(html = tagList(
-        spin_fading_circles(),  # A nice spinning loading indicator
+      waiter::waiter_show(html = tagList(
+        waiter::spin_fading_circles(),  # A nice spinning loading indicator
         h4("Calculating, please wait...")
       ))
       model_code <- paste("mod1 <- ",deparse(as.function(eval(str2lang(paste(c("results$pkpdm", results$modProp), collapse = "|>\n\t"))))), collapse="\n")
       rstudioapi::insertText(model_code)
 
-      waiter_hide()
+      waiter::waiter_hide()
       stopApp()  # Close the app after the code is copied
     })
   })
