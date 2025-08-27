@@ -74,7 +74,7 @@ pkprUI <- function(id) {
         column(5, uiOutput(ns("property_ui")),
                style="column-width:45%; vertical-align: middle; align: center")
       ),
-      fluidRow(column(12, DTOutput(ns("table_output")))),
+      fluidRow(column(12, DT::DTOutput(ns("table_output")))),
       fluidRow(
         column(12, HTML("&nbsp;"))
       ),
@@ -159,7 +159,7 @@ pkprServer <- function(id, results) {
     })
 
     # Render data table
-    output$table_output <- renderDT({
+    output$table_output <- DT::renderDT({
       td <- table_data()
       td0 <- modelPropIni(results$pkpdm$props$cmtProp)
       if (inherits(td, "data.frame") && nrow(td) > 0) {
@@ -184,8 +184,11 @@ pkprServer <- function(id, results) {
           td <- data.frame(Compartment = character(0), Property = character(0), Remove = character(0), stringsAsFactors = FALSE)
         }
       }
-      datatable(td, escape = FALSE, selection = 'none', rownames = FALSE,
-                options = list(dom = 't', ordering = FALSE, paging = FALSE))
+      DT::datatable(td, escape = FALSE, selection = 'none',
+                    rownames = FALSE,
+                    options = list(dom = 't',
+                                   ordering = FALSE,
+                                   paging = FALSE))
     })
 
     # Handling delete button click in the table

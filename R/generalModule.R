@@ -43,17 +43,17 @@ calculatingStatisticalModel <-function(results){
 
     waiter_hide()
   }
-  
+
   calculatingExploreData <-function(results) {
     if(is.null(results$forCov)){
       waiter_show(html = tagList(
         spin_seven_circle(), # A nice spinning loading indicator
         h4("Calculating explore data...")
       ))
-      
+
       # Evaluate the pipeline for results$forCov
       results$forCov <- eval(str2lang(paste(c("results$parEstim", results$ParEstimates), collapse = "|>\n\t")))
-      
+
       waiter_hide()
     }
   }
@@ -85,8 +85,6 @@ calculatingParameterEstimate <-function(results) {
 #' @import shinyjs
 #' @import waiter
 #' @import shinyWidgets
-#' @import rhandsontable
-#' @import DT
 #' @import nlmixr2lib
 #' @export
 nlmixr2model <- function() {
@@ -132,7 +130,7 @@ nlmixr2model <- function() {
 
       # Tab for Statistical Model
       tabPanel("Statistical Model", icon = icon("chart-bar"), covUI("covariancEstimate")),
-      
+
       # Tab for Explore Data
       tabPanel("Explore Data", icon = icon("play"), expUI("exploreData"))
 
@@ -177,7 +175,7 @@ nlmixr2model <- function() {
         results$ParaEstim <- NULL
         req(results$pkpdm)
 
-        
+
       } else if (tab == "Statistical Model") {
         calculatingInitialModel(results)
         calculatingParameterEstimate(results)
@@ -189,10 +187,10 @@ nlmixr2model <- function() {
       calculatingParameterEstimate(results)
         calculatingStatisticalModel(results)
         req(results$parEstim)
-        
-        
-        
-        
+
+
+
+
       }
     })
 
