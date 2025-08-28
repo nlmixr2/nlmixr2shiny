@@ -11,12 +11,27 @@ calculatingInitialModel <-function(results){
       waiter::spin_fading_circles(),  # A nice spinning loading indicator
       h4("Calculating initial model...")
     ))
-
     # Evaluate pipeline for results$pkpdm
     results$pkpdm <- eval(str2lang(results$pkpdpipe))
-
+    # Reset the other results that depend on the initial model
+    results$parEstim <- NULL
+    results$forCov <- NULL
     waiter::waiter_hide()
   }
+}
+#' This resets the initial model calculations
+#'
+#'
+#' @param results The Shiny lists that contains the results.
+#'
+#' @return nothing, called for side effects
+#' @noRd
+#' @author Matthew L. Fidler
+resetInitialModel <- function(results) {
+  results$pkpdm <- NULL
+  results$modProp <- NULL
+  results$parEstim <- NULL
+  results$forCov <- NULL
 }
 
 #' This function is supposed to calculate the statistical model.
@@ -25,7 +40,7 @@ calculatingInitialModel <-function(results){
 #'
 #' @return nothing called for side effects
 #' @noRd
-calculatingStatisticalModel <-function(results){
+calculatingStatisticalModel <-function(results) {
   if (is.null(results$forCov)){
     waiter::waiter_show(html = tagList(
       waiter::spin_fading_circles(),  # A nice spinning loading indicator
@@ -37,22 +52,12 @@ calculatingStatisticalModel <-function(results){
 
     waiter::waiter_hide()
   }
-
-  calculatingExploreData <-function(results) {
-    if(is.null(results$forCov)) {
-      waiter::waiter_show(html = tagList(
-        waiter::spin_seven_circle(), # A nice spinning loading indicator
-        h4("Calculating explore data...")
-      ))
-
-      # Evaluate the pipeline for results$forCov
-      results$forCov <- eval(str2lang(paste(c("results$parEstim", results$ParEstimates), collapse = "|>\n\t")))
-
-      waiter::waiter_hide()
-    }
-  }
 }
-
+#' Calculate the parameter estimates table
+#'
+#' @param results results that allow the calculation of the parameter estimates table
+#' @return nothing, called for side effects
+#' @noRd
 calculatingParameterEstimate <-function(results) {
   if (is.null(results$ParaEstim)) {
     waiter::waiter_show(html = tagList(
@@ -62,11 +67,30 @@ calculatingParameterEstimate <-function(results) {
 
     # Evaluate the pipeline for results$ParaEstim
     results$parEstim <- eval(str2lang(paste(c("results$pkpdm", results$modProp), collapse = "|>\n\t")))
+    results$forCov <- NULL
+    waiter::waiter_hide()
+  }
+}
+#' Calculate what is needed to explore the model with the data in the R environment
+#'
+#' @param results the results that need to be caluclated
+#' @return
+#' @export
+#' @author Matthew L. Fidler
+calculatingExploreData <-function(results) {
+  if(is.null(results$forCov)) {
+    waiter::waiter_show(html = tagList(
+      waiter::spin_seven_circle(), # A nice spinning loading indicator
+      h4("Calculating explore data...")
+    ))
+
+    # Evaluate the pipeline for results$forCov
+    results$forCov <- eval(str2lang(paste(c("results$parEstim", results$ParEstimates), collapse = "|>\n\t")))
 
     waiter::waiter_hide()
   }
-
 }
+
 
 
 #' The nlmixr2model function
@@ -119,7 +143,10 @@ nlmixr2model <- function() {
                ParEstUI("parameterEstimate")),
 
       # Tab for Statistical Model
-      tabPanel("Statistical Model", icon = icon("chart-bar"), covUI("covariancEstimate"))## ,
+      tabPanel("Statistical Model", icon = icon("chart-bar"), covUI("covariancEstimate")) ,
+
+      # Tab for model
+      tabPanel("Edit/Insert", icon = icon("file-pen"), aceUI("editModel"))
 
       # Tab for Explore Data
       ## tabPanel("Explore Data", icon = icon("play"), expUI("exploreData"))
@@ -131,6 +158,7 @@ nlmixr2model <- function() {
 
   server <- function(input, output, session) {
     # Reactive values to store the intermediate results
+    ns <- session$ns
     results <- reactiveValues(
       pkpdpipe = character(0),
       pkpdm = NULL,
@@ -145,33 +173,33 @@ nlmixr2model <- function() {
     pkprServer("modelProperty", results)
     ParEstServer("parameterEstimate", results)
     covServer("covariancEstimate", results)
-    expServer("exploreData", results)
+    #expServer("exploreData", results)
+    aceServer("editModel", results)
+
 
     # Monitor active tab and update results based on the selected tab
     observeEvent(input$mainTabs, {
       tab <- input$mainTabs
 
-
       if (tab == "PKPD Model") {
-        results$parEst <- NULL
-        results$modProp <- NULL
-        results$pkpdm <- NULL
+        resetInitialModel(results)
       } else if (tab == "Model Property") {
         calculatingInitialModel(results)
-        results$parEst <- NULL
       } else if (tab == "Parameter Estimate") {
         calculatingInitialModel(results)
         calculatingParameterEstimate(results)
-        results$ParaEstim <- NULL
         req(results$pkpdm)
-
-
       } else if (tab == "Statistical Model") {
         calculatingInitialModel(results)
         calculatingParameterEstimate(results)
         calculatingStatisticalModel(results)
         req(results$parEstim)
       } else if (tab == "Explore Data") {
+        calculatingInitialModel(results)
+        calculatingParameterEstimate(results)
+        calculatingStatisticalModel(results)
+        req(results$parEstim)
+      } else if (tab == "Edit/Insert") {
         calculatingInitialModel(results)
         calculatingParameterEstimate(results)
         calculatingStatisticalModel(results)

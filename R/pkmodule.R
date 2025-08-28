@@ -54,9 +54,7 @@ pkUI <- function(id) {
                uiOutput(ns("parameter_base_ui"))
         )
       )
-    ),
-    # Replaced "Show Model Code" with "Copy Model Code" button
-    actionButton(ns("copy_code"), "Export Model")  # Button to directly copy model code
+    )
   )
 }
 
@@ -175,26 +173,6 @@ pkServer <- function(id, results) {
       pd_output <- ifelse(results$pd_switch, do.call(PDph, pd_values), "")
       pkpdmod <- ifelse(results$pk_switch || results$pd_switch, jPh(pk_output, pd_output), "")
       results$pkpdpipe <- pkpdmod
-    })
-
-
-    observeEvent(input$copy_code, {
-      waiter::waiter_show(html = tagList(
-        waiter::spin_fading_circles(),  # A nice spinning loading indicator
-        h4("Calculating, please wait...")
-      ))
-      req(results$pkpdpipe)
-
-      # Generate the model code
-      code_to_copy <- paste(deparse(as.function(eval(str2lang(results$pkpdpipe)))), collapse = "\n")
-
-      # Copy code to the R script using rstudioapi::insertText
-      rstudioapi::insertText(text =paste("mod1 <- ", code_to_copy))
-
-      waiter::waiter_hide()  # Hide the spinner after the code is copied
-
-      # Close the app
-      stopApp()
     })
   })
 }

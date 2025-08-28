@@ -19,15 +19,17 @@ LazyData: true
 Depends:
   nlmixr2lib
 Imports:
-  rstudioapi,
-  nlmixr2,
-  rxode2,
-  shiny,
-  shinydashboard,
-  shinyjs,
-  waiter,
-  shinyWidgets,
-  DT,
-  rhandsontable,
-  miniUI
+    rstudioapi,
+    nlmixr2,
+    rxode2,
+    shiny,
+    shinydashboard,
+    shinyjs,
+    waiter,
+    shinyWidgets,
+    DT,
+    rhandsontable,
+    miniUI,
+    shinyAce,
+    clipr
 RoxygenNote: 7.3.2
