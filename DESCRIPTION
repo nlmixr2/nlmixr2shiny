@@ -30,5 +30,6 @@ Imports:
     DT,
     rhandsontable,
     miniUI,
-    shinyAce
+    shinyAce,
+    clipr
 RoxygenNote: 7.3.2

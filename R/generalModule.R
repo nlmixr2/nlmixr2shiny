@@ -158,6 +158,7 @@ nlmixr2model <- function() {
 
   server <- function(input, output, session) {
     # Reactive values to store the intermediate results
+    ns <- session$ns
     results <- reactiveValues(
       pkpdpipe = character(0),
       pkpdm = NULL,
@@ -202,8 +203,6 @@ nlmixr2model <- function() {
         calculatingInitialModel(results)
         calculatingParameterEstimate(results)
         calculatingStatisticalModel(results)
-        shinyAce::updateAceEditor(session, "ace",
-                                  value = paste0("model <- ", paste(deparse(as.function(results$forCov)), collapse="\n")))
         req(results$parEstim)
       }
     })
