@@ -77,9 +77,6 @@ pkprUI <- function(id) {
       fluidRow(column(12, DT::DTOutput(ns("table_output")))),
       fluidRow(
         column(12, HTML("&nbsp;"))
-      ),
-      fluidRow(
-        column(12, actionButton(ns("copy_code"), "Copy Model Code"))
       )
     )
   )
@@ -199,19 +196,6 @@ pkprServer <- function(id, results) {
         table_data(table_data()[-row_id, ])
         updatePipeOutput()
       }
-    })
-
-    # Copy model code button functionality
-    observeEvent(input$copy_code, {
-      waiter::waiter_show(html = tagList(
-        waiter::spin_fading_circles(),  # A nice spinning loading indicator
-        h4("Calculating, please wait...")
-      ))
-      model_code <- paste("mod1 <- ",deparse(as.function(eval(str2lang(paste(c("results$pkpdm", results$modProp), collapse = "|>\n\t"))))), collapse="\n")
-      rstudioapi::insertText(model_code)
-
-      waiter::waiter_hide()
-      stopApp()  # Close the app after the code is copied
     })
   })
 }
