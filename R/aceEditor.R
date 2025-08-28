@@ -15,7 +15,7 @@ aceServer <- function(id, results) {
 
     observeEvent(results$forCov, {
       req(results$forCov)
-      editorContent(paste0("model <- ", paste(deparse(as.function(results$forCov)), collapse="\n"))
+      editorContent(paste0("model <- ", paste(deparse(as.function(results$forCov)), collapse="\n")))
       shinyAce::updateAceEditor(session,
                                 editorId="ace",
                                 value = editorContent())
