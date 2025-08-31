@@ -3,18 +3,52 @@
 covUI <- function(id) {
   ns <- NS(id)
   fluidPage(
-    titlePanel("\u03a9"),
-    tags$style(HTML("
-      .monospace-textarea {
-        font-family: 'Courier New', Courier, monospace;
-      }
-    ")),
     fluidRow(
       column(
-        width = 12,
-        rhandsontable::rHandsontableOutput(ns("triangleTable")) # Covariance table below the button
+        width = 3,
+        ""
+      ),
+      column(
+        width=2,
+        shinyWidgets::pickerInput(
+          inputId = "resErrorModel",
+          label = "Residual Error Model",
+          choices = c("Additive", "Proportional", "Combined1", "Combined2"),
+          options = shinyWidgets::pickerOptions(container = "body"),
+          width = "100%"
+        )
+      ),
+      column(
+        width=2,
+        shinyWidgets::pickerInput(
+          inputId = "transform",
+          label = "Transformation",
+          choices = c("Untransformed", "Lognormal", "Logit-Normal",
+                      "Probit-Normal", "boxCox", "yeoJohnson"),
+          options = shinyWidgets::pickerOptions(container = "body"),
+          width = "100%"
+        )
+      ),
+      column(
+        width=2,
+        shinyWidgets::pickerInput(
+          inputId = "Distribution",
+          label = "Distribution",
+          choices = c("Normal", "t-distribution", "Cauchy",
+                      "Poisson", "Binomial", "Beta", "Chi-Squared",
+                      "Geometric", "Uniform", "Weibull", "Negative Binomial",
+                      "Negative Binomial (mu)",
+                      "Generalized Log-Likelihood"),
+          options = shinyWidgets::pickerOptions(container = "body"),
+          width = "100%"
+        )
+      ),
+      column(
+        width = 2,
+        ""
       )
-    )
+    ),
+    uiOutput(ns("omegaRows"))
   )
 }
 
@@ -32,6 +66,24 @@ covServer <- function(id, results) {
       matrixData <- results$forCov$omega  # Access the omega matrix
       as.data.frame(matrixData)  # Convert to data frame
     })
+
+    # Dynamically add UI output if there are between subject variability
+    output$omegaRows <- renderUI({
+      if (length(results$forCov$eta) == 0) {
+        NULL
+      } else {
+        list(
+          titlePanel("\u03a9"),
+          fluidRow(
+            column(
+              width = 12,
+              rhandsontable::rHandsontableOutput(ns("triangleTable")) # Covariance table below the button
+            )
+          )
+        )
+      }
+    })
+
 
     # Render the rhandsontable (covariance matrix)
     output$triangleTable <- rhandsontable::renderRHandsontable({
