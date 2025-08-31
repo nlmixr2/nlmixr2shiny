@@ -6,14 +6,22 @@ covUI <- function(id) {
     fluidRow(
       column(
         width = 3,
-        ""
+        rhandsontable::rHandsontableOutput(ns("resErrorEst"),
+                                           width="100%")
       ),
       column(
         width=2,
         shinyWidgets::pickerInput(
           inputId = "resErrorModel",
           label = "Residual Error Model",
-          choices = c("Additive", "Proportional", "Combined1", "Combined2"),
+          choices = c("Additive",
+                      "Proportional",
+                      "Power",
+                      "Additive + Proportional (Combined 1)",
+                      "Additive + Proportional (Combined 2)",
+                      "Additive + Power (Combined 1)",
+                      "Additive + Power (Combined 2)"
+                      ),
           options = shinyWidgets::pickerOptions(container = "body"),
           width = "100%"
         )
@@ -23,8 +31,14 @@ covUI <- function(id) {
         shinyWidgets::pickerInput(
           inputId = "transform",
           label = "Transformation",
-          choices = c("Untransformed", "Lognormal", "Logit-Normal",
-                      "Probit-Normal", "boxCox", "yeoJohnson"),
+          choices = c("Untransformed",
+                      "Log-normal",
+                      "Logit-normal",
+                      "Logit-normal + Box-Cox",
+                      "Logit-normal + Yeo-Johsnon",
+                      "Probit-normal",
+                      "Probit-normal + Box-Cox",
+                      "Probit-normal + Yeo-Johsnon"),
           options = shinyWidgets::pickerOptions(container = "body"),
           width = "100%"
         )
@@ -57,6 +71,7 @@ covServer <- function(id, results) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
+
     # Reactive value to hold the updated matrix data from UI
     updatedMatrixDF <- reactiveVal(NULL)
 
@@ -70,7 +85,7 @@ covServer <- function(id, results) {
     # Dynamically add UI output if there are between subject variability
     output$omegaRows <- renderUI({
       if (length(results$forCov$eta) == 0) {
-        NULL
+        list(h4("No between subject variability"))
       } else {
         list(
           titlePanel("\u03a9"),
@@ -103,6 +118,12 @@ covServer <- function(id, results) {
             }
           }")
     })
+
+    output$resErrorEst <- rhandsontable::renderRHandsontable({
+      data.frame("additive sd"="add.sd", "proportional sd"="prop.sd", check.names = FALSE,
+                 row.names=c("var")) |>
+        rhandsontable::rhandsontable()
+      })
 
     # Observe changes made to the rhandsontable and update the reactive value
     observe({
