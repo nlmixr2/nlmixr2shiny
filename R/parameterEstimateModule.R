@@ -213,8 +213,11 @@ ParEstServer <- function(id, results) {
       parEstDF(df)
 
       output$initalEstimates <- rhandsontable::renderRHandsontable({
-        rhandsontable::rhandsontable(df[!is.na(df$lhs), ], rowHeaders = FALSE) |>
-          rhandsontable::hot_col("Trans.", type = "dropdown", source = c("LogNormal", "LogitNormal", "ProbitNormal", "Normal"), allowInvalid = TRUE) |>
+        rhandsontable::rhandsontable(df[!is.na(df$lhs), ], rowHeaders = FALSE,
+                                     overflow = "visible") |>
+          rhandsontable::hot_col("Trans.",
+                                 type = "dropdown",
+                                 source = c("LogNormal", "LogitNormal", "ProbitNormal", "Normal"), allowInvalid = FALSE) |>
           rhandsontable::hot_col("Eta", type = "checkbox") |>
           rhandsontable::hot_col("lower", type = "numeric", allowInvalid = TRUE) |>
           rhandsontable::hot_col("upper", type = "numeric", allowInvalid = TRUE)
@@ -250,26 +253,5 @@ ParEstServer <- function(id, results) {
       rhandsontable::rhandsontable(changedDf())
     })
 
-    # Copy model code button functionality
-    observeEvent(input$copy_code, {
-      # Show the waiter spinner while generating the code
-      waiter::waiter_show(html = tagList(
-        waiter::spin_fading_circles(),
-        h4("Calculating, please wait...")
-      ))
-
-      # Create the model code from the pipeline of parameter estimates and changes
-      model_code <- paste("mod1 <- ",
-        deparse(as.function(eval(str2lang(paste(c("results$parEstim", results$ParEstimates), collapse = " |> \n\t"))))),
-        collapse = "\n"
-      )
-
-      # Paste the model code into the active R script
-      rstudioapi::insertText(model_code)
-
-      # Hide the spinner and stop the app
-      waiter::waiter_hide()
-      stopApp()
-    })
   })
 }
