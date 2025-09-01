@@ -29,7 +29,7 @@ residDfObject <- function(x, line) {
 #' @export
 residDf.rxUi <- function(line) {
   predDf <- line$predDf
-  lapply(seq_along(pred_df$cond), function(c) {
+  lapply(seq_along(predDf$cond), function(c) {
     mod <- residDfObject(line, c)
     residDf(mod)
   })
