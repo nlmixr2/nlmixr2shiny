@@ -100,6 +100,7 @@ calculatingExploreData <-function(results) {
 #'
 #' @return A Shiny UI object.
 #' @import shiny
+#' @import ggplot2
 #' @export
 nlmixr2model <- function() {
   ui <- fluidPage(

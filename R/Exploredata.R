@@ -155,17 +155,17 @@ expServer <- function(id, results) {
           }
 
           # Update the model parameters
-          ini(results$forCov) <- newIni
+          rxode2::ini(results$forCov) <- newIni
 
           # Rerun simulation
-          newSim <- rxSolve(results$forCov, selectedData(), keep = "DV")
+          newSim <- rxode2::rxSolve(results$forCov, selectedData(), keep = "DV")
           results$s <- newSim
         })
         # Solve the dataset
-        print(results$forCov)
-        s = rxSolve(results$forCov, dataset, keep = "DV")
+        ## print(results$forCov)
+        s <- rxode2::rxSolve(results$forCov, dataset, keep = "DV")
         # Store the results
-        results$s = s
+        results$s <- s
         # Save dataset
         selectedData(dataset)
 
@@ -197,6 +197,7 @@ expServer <- function(id, results) {
 
     # Render the PK/PD plot
     output$dataPlot <- renderPlot({
+      time <- DV <- id <- ipredSim <- NULL
       req(results$s)
       print(results$s)
       gg = ggplot(results$s, aes(x = time, y = DV)) +
