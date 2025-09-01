@@ -157,8 +157,6 @@ pkprServer <- function(id, results) {
     # Render data table
     output$table_output <- DT::renderDT({
       td <- table_data()
-      assign("var", results$pkpdm, envir=globalenv())
-      print(results$pkpdm$props$cmtProp)
       td0 <- modelPropIni(results$pkpdm$props$cmtProp)
       if (inherits(td, "data.frame") && nrow(td) > 0) {
         # Add column Conditional Fixed or Remove Button

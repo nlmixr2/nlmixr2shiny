@@ -109,8 +109,8 @@ pkServer <- function(id, results) {
                 choicesOpt=list(
                   subtext = .pkmodlib()$description
                 ),
-                options = pickerOptions(container = "body",
-                                        liveSearch = TRUE),
+                options = shinyWidgets::pickerOptions(container = "body",
+                                                      liveSearch = TRUE),
                 width = "100%",
                 selected = NULL)
             )

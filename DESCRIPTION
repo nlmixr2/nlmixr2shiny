@@ -32,7 +32,8 @@ Imports:
     lotri,
     ggplot2,
     checkmate,
-    xfun
+    xfun,
+    qs
 RoxygenNote: 7.3.2
 Suggests:
     testthat

@@ -12,7 +12,6 @@ calculatingInitialModel <-function(results){
       h4("Calculating initial model...")
     ))
     if (isTRUE(results$modelModified)) {
-
     } else if (results$modelTypeSwitch == "Model Builder") {
       # Evaluate pipeline for results$pkpdm
       results$pkpdm <- eval(str2lang(results$pkpdpipe))
@@ -117,6 +116,7 @@ calculatingExploreData <-function(results) {
 #' @return A Shiny UI object.
 #' @import shiny
 #' @import ggplot2
+#' @import nlmixr2lib
 #' @export
 nlmixr2model <- function() {
   ui <- fluidPage(
