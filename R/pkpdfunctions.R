@@ -148,8 +148,8 @@ PDph <- function(response_type = c("Direct/Immediate", "Indirect/Turnover", "Eff
 
 
 jPh <- function(pkO,pdO){
-  checkmate::isCharacter(pkO, len = 1, any.missing = FALSE)
-  checkmate::isCharacter(pdO, len = 1, any.missing = FALSE)
+  checkmate::assertCharacter(pkO, len = 1, any.missing = FALSE)
+  checkmate::assertCharacter(pdO, len = 1, any.missing = FALSE)
   joined <- c(pkO,pdO)
   joined <- joined[joined!=""]
   joined <- paste(joined,collapse = "|>\n\t")
