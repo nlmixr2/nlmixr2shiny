@@ -5,7 +5,20 @@
 #' @return nothing called for side effects
 #'
 #' @noRd
-calculatingInitialModel <-function(results){
+calculatingInitialModel <-function(results) {
+  if (!is.null(results$ace)) {
+    # Save model, but require an evaluation/parse
+    if (results$ace != "") {
+      .env <- new.env(parent=globalenv())
+      eval(str2lang(results$ace), envir = .env)
+      .ls <- ls(.env)
+      if (length(.ls) == 1L) {
+        resetInitialModel(results)
+        results$pkpdm <- rxode2::rxode2(get(.ls, envir = .env))
+      }
+    }
+    results$ace <- NULL
+  }
   if (is.null(results$pkpdm)){
     waiter::waiter_show(html = tagList(
       waiter::spin_fading_circles(),  # A nice spinning loading indicator
@@ -156,7 +169,7 @@ nlmixr2model <- function() {
       tabPanel("Model Property", icon = icon("wrench"), pkprUI("modelProperty")),
 
       # Tab for Parameter Estimate
-      tabPanel("Parameter Estimate", icon = icon("calculator"),
+      tabPanel("Population Estimates", icon = icon("calculator"),
                ParEstUI("parameterEstimate")),
 
       # Tab for Statistical Model
@@ -202,7 +215,7 @@ nlmixr2model <- function() {
         resetInitialModel(results)
       } else if (tab == "Model Property") {
         calculatingInitialModel(results)
-      } else if (tab == "Parameter Estimate") {
+      } else if (tab == "Population Estimates") {
         calculatingInitialModel(results)
         calculatingParameterEstimate(results)
         req(results$pkpdm)

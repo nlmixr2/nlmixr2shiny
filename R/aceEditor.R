@@ -11,6 +11,7 @@ aceServer <- function(id, results) {
         "ace",
         fontSize = input$fontSize,
         theme = input$theme)
+      results$ace <- input$ace
     })
 
     observeEvent(results$forCov, {
