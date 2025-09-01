@@ -19,7 +19,7 @@ calculatingInitialModel <-function(results) {
     }
     results$ace <- NULL
   }
-  if (is.null(results$pkpdm)){
+  if (is.null(results$pkpdm)) {
     waiter::waiter_show(html = tagList(
       waiter::spin_fading_circles(),  # A nice spinning loading indicator
       h4("Calculating initial model...")
@@ -56,7 +56,9 @@ calculatingInitialModel <-function(results) {
 #' @noRd
 #' @author Matthew L. Fidler
 resetInitialModel <- function(results) {
-  results$pkpdm <- NULL
+  if (!isTRUE(results$modelModified)) {
+    results$pkpdm <- NULL
+  }
   results$modProp <- NULL
   results$parEstim <- NULL
   results$forCov <- NULL

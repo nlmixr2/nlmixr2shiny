@@ -191,8 +191,32 @@ generateChangeMessages <- function(df, modDF) {
 ParEstUI <- function(id) {
   ns <- NS(id)
   tagList(
-    h3("Parameter Estimate"),
-    rhandsontable::rHandsontableOutput(ns("initalEstimates"))
+    fluidRow(
+      column(
+        12,
+        fluidRow(
+          column(
+            2,
+            actionButton("goPlot", "Update Plots", align = "right"),
+            rhandsontable::rHandsontableOutput(ns("plotOptions")),
+            h4("Time sampling"),
+            rhandsontable::rHandsontableOutput(ns("timeSampling")),
+            h4("Dosing"),
+            rhandsontable::rHandsontableOutput(ns("dosingTable1")),
+            rhandsontable::rHandsontableOutput(ns("dosingTable2")),
+          ),
+          column(
+            10,
+            fluidRow(
+              h4("Parameters (listed in back-transformed values)"),
+              rhandsontable::rHandsontableOutput(ns("initalEstimates")),
+              uiOutput("message", placeholder = FALSE),
+              uiOutput("plotTabs")
+            )
+          )
+        )
+      )
+    )
   )
 }
 
@@ -203,6 +227,10 @@ ParEstServer <- function(id, results) {
     changedDf <- reactiveVal(NULL)
     rowChanges <- reactiveVal(NULL)
     parEstDF <- reactiveVal(NULL)
+    timeSamplingDf <- reactiveVal(NULL)
+    dosingTable1Df <- reactiveVal(NULL)
+    dosingTable2Df <- reactiveVal(NULL)
+    plotOptionsDf <- reactiveVal(NULL)
     changeMessages <- reactiveVal(NULL)
 
     observeEvent(results$parEstim, {
@@ -212,15 +240,122 @@ ParEstServer <- function(id, results) {
       df$Eta <- FALSE
       parEstDF(df)
 
-      output$initalEstimates <- rhandsontable::renderRHandsontable({
-        rhandsontable::rhandsontable(df[!is.na(df$lhs), ], rowHeaders = FALSE,
+      output$plotOptions <- rhandsontable::renderRHandsontable({
+        if (is.null(plotOptionsDf())) {
+          plotOptionsDf(data.frame(
+            N.Sub=1,
+            logy=FALSE
+          ))
+        }
+        rhandsontable::rhandsontable(plotOptionsDf(), rowHeaders = FALSE,
                                      overflow = "visible") |>
-          rhandsontable::hot_col("Trans.",
-                                 type = "dropdown",
-                                 source = c("LogNormal", "LogitNormal", "ProbitNormal", "Normal"), allowInvalid = FALSE) |>
-          rhandsontable::hot_col("Eta", type = "checkbox") |>
-          rhandsontable::hot_col("lower", type = "numeric", allowInvalid = TRUE) |>
-          rhandsontable::hot_col("upper", type = "numeric", allowInvalid = TRUE)
+          rhandsontable::hot_col("N.Sub", type = "numeric", allowInvalid = FALSE) |>
+          rhandsontable::hot_col("logy", type = "checkbox")
+      })
+
+      output$dosingTable1 <- rhandsontable::renderRHandsontable({
+        .state <- rxode2::rxModelVars(results$parEstim)$state
+        if (is.null(dosingTable1Df())) {
+          if (length(.state) > 1) {
+            dosingTable1Df(data.frame(
+              amt = 1,
+              rate = NA_real_,
+            ))
+          } else {
+            dosingTable1Df(data.frame(
+              amt = 1,
+              rate = NA_real_,
+              cmt = .state[1]
+            ))
+          }
+        } else if (length(.state) > 1 && length(names(dosingTable1Df())) == 2) {
+          dosingTable1Df(cbind(dosingTable1Df(), cmt = .state[1]))
+        } else if (length(.state) == 1 && length(names(dosingTable1Df())) == 3) {
+          dosingTable1Df(dosingTable1Df()[, -which(names(dosingTable1Df()) == "cmt")])
+        }
+
+        .ret <- rhandsontable::rhandsontable(dosingTable1Df(), rowHeaders = FALSE,
+                                             overflow = "visible") |>
+          rhandsontable::hot_col("amt", type = "numeric", allowInvalid = FALSE) |>
+          rhandsontable::hot_col("rate", type = "numeric", allowInvalid = TRUE)
+        if (length(.state) > 1) {
+          .ret <- .ret |>
+            rhandsontable::hot_col("cmt",
+                                   type = "dropdown",
+                                   source = .state,
+                                   allowInvalid = FALSE)
+        }
+        .ret
+      })
+
+      output$dosingTable2 <- rhandsontable::renderRHandsontable({
+        if (is.null(dosingTable2Df())) {
+            dosingTable2Df(data.frame(
+              start = 0,
+              interval = NA_real_
+              ))
+        }
+
+        rhandsontable::rhandsontable(dosingTable2Df(), rowHeaders = FALSE,
+                                     overflow = "visible") |>
+          rhandsontable::hot_col("start", type = "numeric", allowInvalid = FALSE) |>
+          rhandsontable::hot_col("interval", type = "numeric", allowInvalid = TRUE)
+      })
+
+      output$timeSampling <- rhandsontable::renderRHandsontable({
+        if (is.null(timeSamplingDf())) {
+          timeSamplingDf(data.frame(
+            start = 0,
+            end = 100,
+            step = 1
+          ))
+        }
+        rhandsontable::rhandsontable(timeSamplingDf(), rowHeaders = FALSE,
+                                     overflow = "visible") |>
+          rhandsontable::hot_col("start", type = "numeric", allowInvalid = FALSE) |>
+          rhandsontable::hot_col("end", type = "numeric", allowInvalid = FALSE) |>
+          rhandsontable::hot_col("step", type = "numeric", allowInvalid = FALSE)
+      })
+
+      output$initalEstimates <- rhandsontable::renderRHandsontable({
+        ## if (plotOptionsDf()$Full.Par) {
+          rhandsontable::rhandsontable(df[!is.na(df$lhs), ], rowHeaders = FALSE,
+                                       overflow = "visible") |>
+            rhandsontable::hot_col("Trans.",
+                                   type = "dropdown",
+                                   source = c("LogNormal", "LogitNormal",
+                                              "ProbitNormal", "Normal"),
+                                   allowInvalid = FALSE) |>
+            rhandsontable::hot_col("Trans.Lower", type="numeric", allowInvalid=TRUE,
+                                   renderer = "
+           function (instance, td, row, col, prop, value, cellProperties) {
+             Handsontable.renderers.NumericRenderer.apply(this, arguments);
+             const transformType = instance.getDataAtCell(row, 2);
+             if (transformType === 'LogitNormal' || transformType === 'ProbitNormal') {
+               td.style.background = 'lightyellow';
+             } else {
+               td.style.background = 'grey';
+             }
+           }") |>
+            rhandsontable::hot_col("Trans.Upper", type="numeric", allowInvalid=TRUE,
+                                   renderer = "
+           function (instance, td, row, col, prop, value, cellProperties) {
+             Handsontable.renderers.NumericRenderer.apply(this, arguments);
+             const transformType = instance.getDataAtCell(row, 2);
+             if (transformType === 'LogitNormal' || transformType === 'ProbitNormal') {
+               td.style.background = 'lightyellow';
+             } else {
+               td.style.background = 'grey';
+             }
+           }") |>
+            rhandsontable::hot_col("Eta", type = "checkbox") |>
+            rhandsontable::hot_col("lower", type = "numeric", allowInvalid = TRUE) |>
+            rhandsontable::hot_col("upper", type = "numeric", allowInvalid = TRUE)
+        ## } else {
+        ##   fullPar <- df[!is.na(df$lhs), ]
+        ##   as.data.frame(t(setNames(fullPar[,c("est")], fullPar$lhs))) %>%
+        ##     rhandsontable::rhandsontable(rowHeaders = FALSE)
+        ## }
       })
     })
 
