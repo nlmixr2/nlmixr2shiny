@@ -1,5 +1,6 @@
 test_that("ordinal simulation", {
   # large simulation model #1
+
   ord <- function() {
     ini({
       b1 <- 7.86
@@ -61,6 +62,10 @@ test_that("ordinal simulation", {
   }
 
   tmp <- ord()
+
+  expect_equal(residDf(tmp),
+               list(data.frame(line = "y ~ c(p0 = 0, p1 = 1, p2 = 2, p3 = 3, p4 = 4, p5 = 5, p6 = 6, p7 = 7, p8 = 8, p9 = 9, 10)", row.names = "y")))
+
 })
 
 test_that("log-likelihood", {
@@ -84,7 +89,9 @@ test_that("log-likelihood", {
 
   tmp <- rxode2::rxode2(f)
 
-  residDf(tmp)
+  expect_equal(residDf(tmp),
+               list(data.frame(add = "add.sd",row.names = "kpd"),
+                    data.frame(LL = "p2", row.names = "lik")))
 
 })
 
@@ -108,6 +115,13 @@ test_that("dnorm()", {
       cp ~ add(add.err) + boxCox(lambda) + dnorm() # define error model
     })
   }
+
+  f <- rxode2::rxode2(f)
+
+  expect_equal(residDf(f),
+               list(data.frame(add = "add.err", lambda = "lambda",
+                               row.names = "cp")))
+
 })
 
 test_that("normal residal", {
@@ -130,6 +144,12 @@ test_that("normal residal", {
       cp ~ add(add.err) + boxCox(lambda)# define error model
     })
   }
+
+  f <- rxode2::rxode2(f)
+
+  expect_equal(residDf(f),
+               list(data.frame(add = "add.err", lambda = "lambda",
+                               row.names = "cp")))
 
 })
 
@@ -155,6 +175,12 @@ test_that("t distribution", {
     })
   }
 
+  f <- rxode2::rxode2(f)
+
+  expect_equal(residDf(f),
+               list(data.frame(prop = "add.err", df = "nu", lambda = "lambda",
+                    row.names = "cp")))
+
 })
 
 test_that("pois data frame", {
@@ -170,7 +196,11 @@ test_that("pois data frame", {
     })
   }
 
-  tmp <- rxode2(f)
+  tmp <- rxode2::rxode2(f)
+
+  expect_equal(residDf(tmp),
+               list(data.frame(lambda = "lambda",
+                               row.names = "err")))
 
 })
 
@@ -189,7 +219,10 @@ test_that("binom simulations", {
     })
   }
 
-  tmp <- rxode2(f)
+  tmp <- rxode2::rxode2(f)
+
+  expect_equal(residDf(tmp),
+               list(data.frame(size = "n", prob = "p", row.names = "err")))
 
 })
 
@@ -209,8 +242,10 @@ test_that("beta simulations", {
     })
   }
 
-  tmp <- rxode2(f)
+  tmp <- rxode2::rxode2(f)
 
+  expect_equal(residDf(tmp),
+               list(data.frame(shape1 = "alpha", shape2 = "beta", row.names = "err")))
 })
 
 test_that("chisq simulations", {
@@ -226,7 +261,10 @@ test_that("chisq simulations", {
     })
   }
 
-  tmp <- rxode2(f)
+  tmp <- rxode2::rxode2(f)
+
+  expect_equal(residDf(tmp),
+               list(data.frame(df = "nu", row.names = "err")))
 
 })
 
@@ -243,7 +281,10 @@ test_that("dexp simulations", {
     })
   }
 
-  tmp <- rxode2(f)
+  tmp <- rxode2::rxode2(f)
+
+  expect_equal(residDf(tmp),
+               list(data.frame(rate = "r", row.names = "err")))
 
 })
 
@@ -263,12 +304,15 @@ test_that("unif simulations", {
     })
   }
 
-  tmp <- rxode2(f)
+  tmp <- rxode2::rxode2(f)
+
+  expect_equal(residDf(tmp),
+               list(data.frame(min = "a", max = "b", row.names = "err")))
 
 })
 
-#  "weibull"="rweibull",
 test_that("rweibull simulations", {
+
   f <- function() {
     ini({
       ta <- 0.5
@@ -283,11 +327,15 @@ test_that("rweibull simulations", {
     })
   }
 
-  tmp <- rxode2(f)
+  tmp <- rxode2::rxode2(f)
+
+  expect_equal(residDf(tmp),
+               list(data.frame(shape = "a", scale = "b", row.names = "err")))
 
 })
 
 test_that("rcauchy simulations", {
+
   f <- function() {
     ini({
       tcl <- log(0.008)
@@ -307,11 +355,16 @@ test_that("rcauchy simulations", {
     })
   }
 
-  tmp <- rxode2(f)
+  tmp <- rxode2::rxode2(f)
+
+  expect_equal(residDf(tmp),
+               list(data.frame(prop = "add.err", lambda = "lambda",
+                               row.names = "cp")))
 
 })
 
 test_that("rgamma simulations", {
+
   f <- function() {
     ini({
       ta <- 0.5
@@ -326,11 +379,16 @@ test_that("rgamma simulations", {
     })
   }
 
-  tmp <- rxode2(f)
+  tmp <- rxode2::rxode2(f)
+
+  expect_equal(residDf(tmp),
+               list(data.frame(shape = "a", scale = "b",
+                               row.names = "err")))
 
 })
 
 test_that("rgeom simulations", {
+
   f <- function() {
     ini({
       ta <- logit(0.5)
@@ -342,11 +400,15 @@ test_that("rgeom simulations", {
     })
   }
 
-  tmp <- rxode2(f)
+  tmp <- rxode2::rxode2(f)
+
+  expect_equal(residDf(tmp),
+               list(data.frame(prob = "a", row.names = "err")))
 
 })
 
 test_that("negative binomial simulation", {
+
   f <- function() {
     ini({
       tn <- 0.5
@@ -360,11 +422,15 @@ test_that("negative binomial simulation", {
     })
   }
 
-  tmp <- rxode2(f)
+  tmp <- rxode2::rxode2(f)
+
+  expect_equal(residDf(tmp),
+               list(data.frame(size = "n", prob = "p", row.names = "err")))
 
 })
 
 test_that("negative binomial simulation", {
+
   f <- function() {
     ini({
       tn <- 0.5
@@ -378,6 +444,9 @@ test_that("negative binomial simulation", {
     })
   }
 
-  tmp <- rxode2(f)
+  tmp <- rxode2::rxode2(f)
+
+  expect_equal(residDf(tmp),
+               list(data.frame(size = "n", mu = "p", row.names = "err")))
 
 })

@@ -1,3 +1,97 @@
+.errDist <- list(
+  "dpois" = 1,
+  "pois" = 1,
+  "dbinom" = 1:2,
+  "binom"=1:2,
+  "dbern" = 1,
+  "bern" = 1,
+  "dbeta" = 2, # non-central isn't supported by stan so drop support
+  "beta" = 2,
+  "dt" = 1, # non-central isn't supported by stan, so drop
+  "t" = 1,
+  ##
+  ## "dnbinom"=2:3,  ## dnbinom is in R; FIXME: how does ot compare to dneg_binomial
+  ## "dneg_binomial", ## not in base R (but in glnmm2)
+  ##
+  ## Available as external package http://ugrad.stat.ubc.ca/R/library/rmutil/html/BetaBinom.html
+  ## "dbetabinomial", ## not in base R (but in glnmm2)
+  "add" = 1,
+  "norm" = 0,
+  "dnorm" = 0,
+  "prop" = 1,
+  "propT" = 1,
+  "propF" = 2,
+  "pow" = 2,
+  "powT" = 2,
+  "powF"=3,
+  "tbs" = 1,
+  "boxCox" = 1,
+  "tbsYj" = 1,
+  "yeoJohnson" = 1,
+  "logn" = 1,
+  "lnorm" = 1,
+  "dlnorm" = 1,
+  "dlogn" = 1,
+  "logitNorm" = 1:3,
+  "probitNorm" = 1:3,
+  "combined1"=0,
+  "combined2"=0,
+  "var"=0,
+  "dv"=0,
+  "comb1"=0,
+  "comb2"=0,
+  "dchisq"=1,
+  "chisq"=1,
+  "dexp"=0:1,
+  "df"=2:3,
+  "f"=2:3,
+  "dgeom"=1,
+  "geom"=1,
+  #  "dhyper"=3,
+  #  "hyper"=3,
+  "dunif"=0:2,
+  "unif"=0:2,
+  "dweibull"=1:2,
+  "weibull"=1:2,
+  "cauchy"= 0,
+  "dcauchy"= 0:2,
+  "dgamma"=1:2,
+  "nbinom"=2,
+  "dnbinom"=2,
+  "nbinomMu"=2,
+  "dnbinomMu"=2
+)
+
+.namedArgumentsToPredDf <- list(
+  add="a",
+  lnorm="a",
+  boxCox="lambda",
+  yeoJohnson="lambda",
+  pow=c("b", "c"),
+  powT=c("b", "c"),
+  powF=c("b", "c", "f"),
+  prop="b",
+  propT="b",
+  propF=c("b", "f"),
+  t=c("d", "e"),
+  pois=c("a"),
+  binom=c("a", "b"),
+  beta=c("a", "b",  "c"),
+  chisq=c("a", "b"), #6
+  dexp=c("a"), #7
+  f=c("a", "b", "c"), #8
+  geom=c("a"), #9
+  #  hyper=c("a", "b", "c"), #10
+  unif=c("a", "b"), #11
+  weibull=c("a", "b"), #12
+  cauchy=c("a", "b"),
+  dgamma=c("a", "b"),
+  nbinom=c("a", "b"),
+  nbinomMu=c("a", "b")
+)
+
+
+
 #' This creates the residual data frame for
 #'
 #' @param line line to parse
@@ -209,7 +303,7 @@ residDf.rxUi <- function(line) {
   if (pred1$transform %in%
         c("boxCox", "yeoJohnson", "logit + yeoJohnson",
           "probit + yeoJohnson", "logit + boxCox", "probit + boxCox")) {
-    cbind(df, data.frame(lambda=rxode2::.rxGetLambdaFromPred1AndIni(env, pred1),
+    cbind(df, data.frame(lambda=deparse1(rxode2::.rxGetLambdaFromPred1AndIni(env, pred1)),
                          row.names=pred1$var))
   } else {
     df
