@@ -22,13 +22,13 @@ transformDF <- function(df) {
         stop("trans_lower and trans_upper must not be NA for expit transformation.",
              call. = FALSE)
       }
-      expit(est, trans_lower, trans_upper)
+      rxode2::expit(est, trans_lower, trans_upper)
     } else if (trans == "probitInv") {
       if (!is.na(trans_lower) && !is.na(trans_upper)) {
         stop("trans_lower and trans_upper must not be NA for probitInv transformation.",
              call. = FALSE)
       }
-      probitInv(est, trans_lower, trans_upper)
+      rxode2::probitInv(est, trans_lower, trans_upper)
     } else {
       est  # Default to no transformation if the trans value is unrecognized
     }
@@ -47,7 +47,7 @@ transformDF <- function(df) {
         if (is.infinite(lower) || lower < trans_lower) {
           trans_lower
         } else {
-          expit(lower, trans_lower, trans_upper)
+          rxode2::expit(lower, trans_lower, trans_upper)
         }
       } else if (trans == "probitInv") {
         if (!is.na(trans_lower) && !is.na(trans_upper)) {
@@ -57,7 +57,7 @@ transformDF <- function(df) {
         if (is.infinite(lower) || lower < trans_lower) {
           trans_lower
         } else {
-          probitInv(lower, trans_lower, trans_upper)
+          rxode2::probitInv(lower, trans_lower, trans_upper)
         }
       } else {
         lower  # Default to no transformation if the trans value is unrecognized
@@ -79,7 +79,7 @@ transformDF <- function(df) {
         if (is.infinite(upper) || upper > trans_upper) {
           trans_upper
         } else {
-          expit(upper, trans_lower, trans_upper)
+          rxode2::expit(upper, trans_lower, trans_upper)
         }
       } else if (trans == "probitInv") {
         if (!is.na(trans_lower) && !is.na(trans_upper)) {
@@ -89,7 +89,7 @@ transformDF <- function(df) {
         if (is.infinite(upper) || upper > trans_upper) {
           trans_upper
         } else {
-          probitInv(upper, trans_lower, trans_upper)
+          rxode2::probitInv(upper, trans_lower, trans_upper)
         }
       } else {
         upper  # Default to no transformation if the trans value is unrecognized

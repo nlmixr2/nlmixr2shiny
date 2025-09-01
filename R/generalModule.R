@@ -11,8 +11,24 @@ calculatingInitialModel <-function(results){
       waiter::spin_fading_circles(),  # A nice spinning loading indicator
       h4("Calculating initial model...")
     ))
-    # Evaluate pipeline for results$pkpdm
-    results$pkpdm <- eval(str2lang(results$pkpdpipe))
+    if (isTRUE(results$modelModified)) {
+
+    } else if (results$modelTypeSwitch == "Model Builder") {
+      # Evaluate pipeline for results$pkpdm
+      results$pkpdm <- eval(str2lang(results$pkpdpipe))
+      results$modelModified <- TRUE
+      results$modelTypeSwitch <- "Current Model"
+    } else if (results$modelTypeSwitch == "Model Library") {
+      # Evaluate the model from the model library
+      .mod <- nlmixr2lib::readModelDb(results$modlibInput)
+      if (!inherits(.mod, "rxUi")){
+        .mod <- rxode2::rxode2(.mod)
+      }
+      results$pkpdm <- .mod
+      results$modelModified <- TRUE
+      results$modelTypeSwitch <- "Current Model"
+    }
+
     # Reset the other results that depend on the initial model
     results$parEstim <- NULL
     results$forCov <- NULL

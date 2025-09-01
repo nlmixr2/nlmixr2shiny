@@ -200,11 +200,12 @@ expServer <- function(id, results) {
       time <- DV <- id <- ipredSim <- NULL
       req(results$s)
       print(results$s)
-      gg = ggplot(results$s, aes(x = time, y = DV)) +
-        geom_point() +
-        ggforce::facet_wrap_paginate(~id, ncol = 2, nrow = 2, page = input$page) +
-        geom_line(aes(x = time, y = ipredSim)) +
-        rxode2::rxTheme()
+      gg <- NULL
+      ## gg = ggplot(results$s, aes(x = time, y = DV)) +
+      ##   geom_point() +
+      ##   ggforce::facet_wrap_paginate(~id, ncol = 2, nrow = 2, page = input$page) +
+      ##   geom_line(aes(x = time, y = ipredSim)) +
+      ##   rxode2::rxTheme()
      # gg = ggplot(results$s, aes(x = time, y = ipredSim )) +
      #    geom_point(aes(x= time, y = DV), size = 3, alpha = 0.8) +
      #    geom_line() +

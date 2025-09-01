@@ -1,6 +1,6 @@
 .getVarLhs <- function(model) {
   if (!inherits(model, "rxUi")) {
-    .ui <- nlmixr2est::nlmixr2(model)
+    .ui <- rxode2::rxode2(model)
   } else {
     .ui <- model
   }

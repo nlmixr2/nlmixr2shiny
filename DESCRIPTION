@@ -13,11 +13,11 @@ Description: A Shiny-based user interface for nlmixr2, allowing users to
     interface. It integrates tools from nlmixr2, nlmixr2lib, and rxode2 with
     enhanced user interactivity using Shiny, shinyjs, and waiter for smooth
     UI experience.
-License: GPL-3
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Depends:
-  nlmixr2lib
+    nlmixr2lib
 Imports:
     rstudioapi,
     rxode2,
@@ -30,7 +30,9 @@ Imports:
     shinyAce,
     clipr,
     lotri,
-    ggplot2
+    ggplot2,
+    checkmate,
+    xfun
 RoxygenNote: 7.3.2
 Suggests:
     testthat

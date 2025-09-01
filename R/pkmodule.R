@@ -1,69 +1,138 @@
 
+.modellib <- new.env(parent=emptyenv())
+.modellib$modeldb <- NULL
+
+.pkmodlib <- function()  {
+  if(is.null(.modellib$modeldb)) {
+    .modellib$modeldb <- qs::qread(system.file("modeldb.qs", package="nlmixr2lib"))
+  }
+  .modellib$modeldb
+}
 
 pkUI <- function(id) {
   ns <- NS(id)
   tagList(
-    shinyWidgets::materialSwitch(ns("pk_switch"), label = "PK", value = TRUE),
-    conditionalPanel(
-      condition = paste0("input['", ns("pk_switch"), "']"),
-      fluidRow(
-        column(3,
-               selectInput(ns("absorption_method"), "Absorption Method",
-                           choices = c("IV/Infusion/Bolus", "First order", "Transit", "Weibull"), selectize = FALSE, size = 4),
-               conditionalPanel(
-                 condition = paste0("input['", ns("absorption_method"), "'] == 'Transit'"),
-                 sliderInput(ns("transit_compartment"), "Number of Transit Compartments",
-                             min = 1, max = 50, value = 1)
-               )
-        ),
-        column(3,
-               selectInput(ns("distribution_model"), "Distribution Model",
-                           choices = c("1 compartment", "2 compartment", "3 compartment"), selectize = FALSE, size = 3)
-        ),
-        column(3,
-               selectInput(ns("elimination_method"), "Elimination Method",
-                           choices = c("Linear", "Michaelis-Menten"), selectize = FALSE, size = 2)
-        ),
-        column(3,
-               uiOutput(ns("parameterization_ui"))
-        )
-      )
-    ),
-    shinyWidgets::materialSwitch(ns("pd_switch"), label = "PD", value = FALSE),
-    conditionalPanel(
-      condition = paste0("input['", ns("pd_switch"), "']"),
-      fluidRow(
-        column(4,
-               selectInput(ns("response_type"), "Response",
-                           choices = c("Direct/Immediate", "Indirect/Turnover", "Effect Compartment"), selectize = FALSE, size = 3)
-        ),
-        column(4,
-               uiOutput(ns("second_dropdown_ui"))
-        ),
-        column(4,
-               uiOutput(ns("third_dropdown_ui"))
-        )
-      ),
-      fluidRow(
-        column(12,
-               uiOutput(ns("sigmoidicity_ui"))
-        )
-      ),
-      fluidRow(
-        column(12,
-               uiOutput(ns("parameter_base_ui"))
-        )
-      )
-    )
+    uiOutput(ns("modelTypeSwitchUi")),
+    uiOutput(ns("modelTypeUi"))
   )
 }
-
-
 
 pkServer <- function(id, results) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
-
+    output$modelTypeSwitchUi <- renderUI({
+      if (isTRUE(results$modelModified)) {
+        shinyWidgets::radioGroupButtons(
+          inputId = ns("modelTypeSwitch"),
+          label = NULL,
+          choices = c("Model Builder", "Model Library", "Model Import", "Current Model"),
+          selected = "Current Model")
+      } else {
+        shinyWidgets::radioGroupButtons(
+          inputId = ns("modelTypeSwitch"),
+          label = NULL,
+          choices = c("Model Builder", "Model Library", "Model Import"),
+          selected = "Model Builder")
+      }
+    })
+    output$modelTypeUi <- renderUI({
+      req(input$modelTypeSwitch)
+      if (input$modelTypeSwitch == "Model Builder") {
+        results$modelModified <- FALSE
+        list(
+          shinyWidgets::materialSwitch(ns("pk_switch"), label = "PK", value = TRUE),
+          conditionalPanel(
+            condition = paste0("input['", ns("pk_switch"), "'] && !input['", ns("modlib_switch"), "']"),
+            fluidRow(
+              column(3,
+                     selectInput(ns("absorption_method"),
+                                 "Absorption Method",
+                                 choices = c("IV/Infusion/Bolus", "First order", "Transit", "Weibull"), selectize = FALSE, size = 4),
+                     conditionalPanel(
+                       condition = paste0("input['", ns("absorption_method"), "'] == 'Transit'"),
+                       sliderInput(ns("transit_compartment"),
+                                   "Number of Transit Compartments",
+                                   min = 1, max = 50, value = 1)
+                     )
+                     ),
+              column(3,
+                     selectInput(ns("distribution_model"),
+                                 "Distribution Model",
+                                 choices = c("1 compartment", "2 compartment", "3 compartment"), selectize = FALSE, size = 3)
+                     ),
+              column(3,
+                     selectInput(ns("elimination_method"), "Elimination Method",
+                                 choices = c("Linear", "Michaelis-Menten"), selectize = FALSE, size = 2)
+                     ),
+              column(3,
+                     uiOutput(ns("parameterization_ui"))
+                     )
+            )
+          ),
+          shinyWidgets::materialSwitch(ns("pd_switch"), label = "PD", value = FALSE),
+          conditionalPanel(
+            condition = paste0("input['", ns("pd_switch"), "'] &&!input['", ns("modlib_switch"), "']"),
+            fluidRow(
+              column(4,
+                     selectInput(ns("response_type"), "Response",
+                                 choices = c("Direct/Immediate", "Indirect/Turnover", "Effect Compartment"), selectize = FALSE, size = 3)
+                     ),
+              column(4,
+                     uiOutput(ns("second_dropdown_ui"))
+                     ),
+              column(4,
+                     uiOutput(ns("third_dropdown_ui"))
+                     )
+            ),
+            fluidRow(
+              column(12,
+                     uiOutput(ns("sigmoidicity_ui"))
+                     )
+            ),
+            fluidRow(
+              column(12,
+                     uiOutput(ns("parameter_base_ui"))
+                     )
+            )
+          )
+        )
+      } else if (input$modelTypeSwitch == "Model Library") {
+        results$modelModified <- FALSE
+        list(
+          fluidRow(
+            column(
+              width = 12,
+              shinyWidgets::pickerInput(
+                inputId = ns("modlibInput"),
+                label = "Select Model from Model Library",
+                choices = .pkmodlib()$name,
+                choicesOpt=list(
+                  subtext = .pkmodlib()$description
+                ),
+                options = pickerOptions(container = "body",
+                                        liveSearch = TRUE),
+                width = "100%",
+                selected = NULL)
+            )
+          )
+        )
+      } else if (input$modelTypeSwitch == "Model Import") {
+        NULL
+      } else if (input$modelTypeSwitch == "Current Model") {
+        list(
+          fluidRow(
+            column(
+              width = 12,
+              h4("Current model in use, reset the model by selecting Model Builder, Model Library, or Import a model."),
+              verbatimTextOutput(ns("currentModelOutput"))
+            )
+          )
+        )
+      } else {
+        NULL
+      }
+    })
+    # Render the RHandsontable for nlmixr2 model library
 
     # UI for parameterization based on distribution model
     output$parameterization_ui <- renderUI({
@@ -117,13 +186,16 @@ pkServer <- function(id, results) {
 
     # Observe changes in the input values and update results
     observe({
+      results$modelTypeSwitch <- input$modelTypeSwitch
+      results$modlibInput <- input$modlibInput
+
       results$absorption_method <- input$absorption_method
       results$distribution_model <- input$distribution_model
       results$elimination_method <- input$elimination_method
       results$parameterization <- input$parameterization
       results$pk_switch <- input$pk_switch
       results$pd_switch <- input$pd_switch
-
+      req(input$absorption_method)
       if (input$absorption_method == "Transit") {
         results$transit_compartment <- input$transit_compartment
       }

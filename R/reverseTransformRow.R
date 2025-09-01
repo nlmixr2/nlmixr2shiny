@@ -1,6 +1,6 @@
 reverseTransformRow <- function(row) {
   trans <- row["Trans."]
-  tranUower <- as.numeric(row["Trans.Lower"])
+  transLower <- as.numeric(row["Trans.Lower"])
   transUpper <- as.numeric(row["Trans.Upper"])
 
   lower <- as.numeric(row["lower"])
