@@ -1,193 +1,3 @@
-trackChanges <- function(originalDf, modifiedDf) {
-  # Check if data frames have the same dimensions
-  if (!all(dim(originalDf) == dim(modifiedDf))) {
-    stop("Data frames must have the same dimensions for comparison.")
-  }
-
-  # Detect rows that have any changes
-  changedRows <- vapply(seq_len(nrow(originalDf)), function(i) {
-    rowChanged <- vapply(seq_along(originalDf[i, ]), function(j) {
-      original <- originalDf[i, j]
-      modified <- modifiedDf[i, j]
-
-      # Compare logical, character, and numeric values
-      if (is.logical(original) && is.logical(modified)) {
-        return(original != modified)
-      } else if (is.character(original) && is.character(modified)) {
-        return(original != modified)
-      } else if (is.numeric(original) && is.numeric(modified)) {
-        return(abs(original - modified) > 1e-4)
-      } else {
-        return(FALSE)  # Fallback for non-comparable types
-      }
-    }, logical(1))
-
-    # If any column in the row has changed, mark the row as changed
-    any(rowChanged)
-  }, logical(1))
-
-  # Use the first column as the row identifier (or row numbers)
-  changedRowsNames <- originalDf[which(changedRows), 1, drop = FALSE]
-
-  # Return the rows that have changed using the first column as the identifier
-  modifiedDf[which(changedRows), , drop = FALSE]
-}
-
-trackChangesWithinRow <- function(originalDf, modifiedDf) {
-  # Check if data frames have the same dimensions
-  if (!all(dim(originalDf) == dim(modifiedDf))) {
-    stop("Data frames must have the same dimensions for comparison.")
-  }
-
-  # Detect changes within each row for every column
-  changedDetails <- lapply(seq_len(nrow(originalDf)), function(i) {
-    vapply(seq_along(originalDf[i, ]), function(j) {
-      original <- originalDf[i, j]
-      modified <- modifiedDf[i, j]
-
-      # Compare logical, character, and numeric values
-      if (is.logical(original) && is.logical(modified)) {
-        return(original != modified)
-      } else if (is.character(original) && is.character(modified)) {
-        return(original != modified)
-      } else if (is.numeric(original) && is.numeric(modified)) {
-        return(abs(original - modified) > 1e-4)
-      } else {
-        return(FALSE)  # Fallback for non-comparable types
-      }
-    }, logical(1))
-  })
-
-  # Set row identifiers as names for the list (use first column of originalDf)
-  if (!is.null(originalDf[, 1])) {
-    names(changedDetails) <- originalDf[, 1]
-  } else {
-    stop("The first column is missing or invalid.")
-  }
-
-  # Return a list of changes for each row with the first column as the row identifier
-  changedDetails
-}
-
-
-
-generateChangeMessages <- function(df, modDF) {
-  if (nrow(df) == 0) {
-    return(character(0))
-  }
-
-  tt <- vapply(seq_len(nrow(df)), function(i) {
-    rowNumber <- df$Row[i]
-    pipen <- character(0)
-    changedColumns <- df$ChangedColumns[i]
-
-    columnList <- unlist(strsplit(as.character(changedColumns), split = ",\\s*"))
-    columnString <- paste(columnList, collapse = ", ")
-
-    # Handle changes in 'Trans.'
-    if ("Trans." %in% columnList) {
-      lhs <- modDF$lhs[rowNumber]
-      transValue <- modDF$Trans.[rowNumber]
-      name <- modDF$name[rowNumber]
-      lower <- ifelse(!is.na(modDF$lower[rowNumber])||modDF$lower[rowNumber]==0, modDF$lower[rowNumber], -Inf)
-      est <- modDF$est[rowNumber]
-      upper <- ifelse(!is.na(modDF$upper[rowNumber])||modDF$upper[rowNumber]==0, modDF$upper[rowNumber], Inf)
-      trUpper <- ifelse(!is.na(modDF$Trans.Upper[rowNumber]), modDF$Trans.Upper[rowNumber], 1)
-      trLower <- ifelse(!is.na(modDF$Trans.Lower[rowNumber]), modDF$Trans.Lower[rowNumber], 0)
-
-      if (transValue %in% c("", "Normal", "Untransformed")) {
-        pipen <- c(pipen, paste0("model(", lhs, "=", name, ")"))
-      } else if (transValue %in% c("exp", "LogNormal")) {
-        pipen <- c(pipen, paste0("model(", lhs, "=exp(", name, "))"))
-
-      } else if (transValue %in% c("expit", "LogitNormal")) {
-        pipen <- c(pipen, paste0("model(", lhs, "=expit(", name, ",", trLower, ",", trUpper, "))"))
-
-      } else if (transValue %in% c("probitInv", "ProbitNormal")) {
-        pipen <- c(pipen, paste0("model(", lhs, "=probitInv(", name, ",", trLower, ",", trUpper, "))"))
-
-      }
-    }
-
-    # Handle changes in 'est' or 'Trans.' for Fixed=FALSE
-    if (("est" %in% columnList || "Trans." %in% columnList) && modDF$fix[rowNumber] == FALSE) {
-      transValue <- modDF$Trans.[rowNumber]
-      name <- modDF$name[rowNumber]
-      lower <- ifelse(!is.na(modDF$lower[rowNumber])||modDF$lower[rowNumber]==0, modDF$lower[rowNumber], -Inf)
-      est <- modDF$est[rowNumber]
-      upper <- ifelse(!is.na(modDF$upper[rowNumber])||modDF$upper[rowNumber]==0, modDF$upper[rowNumber], Inf)
-      trUpper <- ifelse(!is.na(modDF$Trans.Upper[rowNumber]), modDF$Trans.Upper[rowNumber], 1)
-      trLower <- ifelse(!is.na(modDF$Trans.Lower[rowNumber]), modDF$Trans.Lower[rowNumber], 0)
-
-
-      if (is.na(upper)){
-        upper <- Inf
-      }
-
-      if (is.na(lower)){
-        lower <- -Inf
-      }
-      if (transValue %in% c("", "Normal", "Untransformed")) {
-        pipen <- c(pipen, paste0("ini(", name, "=c(", lower, ",", est, ",", upper, "))"))
-      } else if (transValue %in% c("LogNormal")) {
-        pipen <- c(pipen, paste0("ini(", name, "=c(log(", lower, "), log(", est, "), log(", upper, ")))"))
-      } else if (transValue %in% c("LogitNormal")) {
-        pipen <- c(pipen, paste0("ini(", name, "=c(logit(", lower, ",", trLower, ",", trUpper, "),",
-                                 "logit(", est, ",", trLower, ",", trUpper, "),",
-                                 "logit(", upper, ",", trLower, ",", trUpper, ")))"))
-      } else if (transValue %in% c("ProbitNormal")) {
-        pipen <- c(pipen, paste0("ini(", name, "=c(probit(", lower, ",", trLower, ",", trUpper, "),",
-                                 "probit(", est, ",", trLower, ",", trUpper, "),",
-                                 "probit(", upper, ",", trLower, ",", trUpper, ")))"))
-      }
-    }
-
-
-    # Handle changes in 'est' or 'Trans.' for Fixed=TRUE
-    if (("est" %in% columnList || "Trans." %in% columnList) && modDF$fix[rowNumber] == TRUE) {
-      transValue <- modDF$Trans.[rowNumber]
-      name <- modDF$name[rowNumber]
-      lower <- ifelse(!is.na(modDF$lower[rowNumber])||modDF$lower[rowNumber]==0, modDF$lower[rowNumber], -Inf)
-      est <- modDF$est[rowNumber]
-      upper <- ifelse(!is.na(modDF$upper[rowNumber])||modDF$upper[rowNumber]==0, modDF$upper[rowNumber], Inf)
-      trUpper <- ifelse(!is.na(modDF$Trans.Upper[rowNumber]), modDF$Trans.Upper[rowNumber], 1)
-      trLower <- ifelse(!is.na(modDF$Trans.Lower[rowNumber]), modDF$Trans.Lower[rowNumber], 0)
-
-      if (transValue %in% c("", "Normal", "Untransformed")) {
-        pipen <- c(pipen, paste0("ini(", name, "=fix(", lower, ",", est, ",", upper, "))"))
-      } else if (transValue %in% c("LogNormal")) {
-        pipen <- c(pipen, paste0("ini(", name, "=fix(log(", lower, "), log(", est, "), log(", upper, ")))"))
-      } else if (transValue %in% c("LogitNormal")) {
-        pipen <- c(pipen, paste0("ini(", name, "=fix(logit(", lower, ",", trLower, ",", trUpper, "),",
-                                 "logit(", est, ",", trLower, ",", trUpper, "),",
-                                 "logit(", upper, ",", trLower, ",", trUpper, ")))"))
-      } else if (transValue %in% c("ProbitNormal")) {
-        pipen <- c(pipen, paste0("ini(", name, "=fix(probit(", lower, ",", trLower, ",", trUpper, "),",
-                                 "probit(", est, ",", trLower, ",",trUpper, "),",
-                                 "probit(", upper, ",", trLower, ",", trUpper, ")))"))
-      }
-    }
-
-    # Handle changes in 'fix' column
-    if ("fix" %in% columnList) {
-      name <- modDF$name[rowNumber]
-      pipen <- c(pipen, paste0("ini(", name, "=fix)"))
-    }
-
-    if ("Eta" %in% columnList) {
-      pipen <- c(pipen, paste0("addEta('", modDF$name[rowNumber], "')"))
-    }
-
-    pipen <- pipen[pipen != ""]  # Remove empty strings
-    paste(pipen, collapse = "|>\n\t")
-  }, character(1))
-  tt <- tt[tt!=""]
-  return(paste(tt,collapse="|>\n\t"))
-}
-
-
-
-
 ParEstUI <- function(id) {
   ns <- NS(id)
   tagList(
@@ -224,21 +34,27 @@ ParEstUI <- function(id) {
 ParEstServer <- function(id, results) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
-    changedDf <- reactiveVal(NULL)
-    rowChanges <- reactiveVal(NULL)
-    parEstDF <- reactiveVal(NULL)
     timeSamplingDf <- reactiveVal(NULL)
     dosingTable1Df <- reactiveVal(NULL)
     dosingTable2Df <- reactiveVal(NULL)
     plotOptionsDf <- reactiveVal(NULL)
-    changeMessages <- reactiveVal(NULL)
+
+    iniDf <- reactiveVal(NULL)
 
     observeEvent(results$parEstim, {
       req(results$parEstim)
-      df <- getRhandsontable(results$parEstim) |>
-        transformDF()
-      df$Eta <- FALSE
-      parEstDF(df)
+
+      output$initalEstimates <-
+        rhandsontable::renderRHandsontable({
+          if (is.null(iniDf())) {
+            .df <- results$parEstim$iniDf
+            .df <- .df[!is.na(.df$ntheta), ]
+            .df <- as.data.frame(t(setNames(.df$est, .df$name)))
+            iniDf(.df)
+          }
+          iniDf() %>%
+            rhandsontable::rhandsontable(rowHeaders = FALSE)
+        })
 
       output$plotOptions <- rhandsontable::renderRHandsontable({
         if (is.null(plotOptionsDf())) {
@@ -316,76 +132,6 @@ ParEstServer <- function(id, results) {
           rhandsontable::hot_col("end", type = "numeric", allowInvalid = FALSE) |>
           rhandsontable::hot_col("step", type = "numeric", allowInvalid = FALSE)
       })
-
-      output$initalEstimates <- rhandsontable::renderRHandsontable({
-        ## if (plotOptionsDf()$Full.Par) {
-          rhandsontable::rhandsontable(df[!is.na(df$lhs), ], rowHeaders = FALSE,
-                                       overflow = "visible") |>
-            rhandsontable::hot_col("Trans.",
-                                   type = "dropdown",
-                                   source = c("LogNormal", "LogitNormal",
-                                              "ProbitNormal", "Normal"),
-                                   allowInvalid = FALSE) |>
-            rhandsontable::hot_col("Trans.Lower", type="numeric", allowInvalid=TRUE,
-                                   renderer = "
-           function (instance, td, row, col, prop, value, cellProperties) {
-             Handsontable.renderers.NumericRenderer.apply(this, arguments);
-             const transformType = instance.getDataAtCell(row, 2);
-             if (transformType === 'LogitNormal' || transformType === 'ProbitNormal') {
-               td.style.background = 'lightyellow';
-             } else {
-               td.style.background = 'grey';
-             }
-           }") |>
-            rhandsontable::hot_col("Trans.Upper", type="numeric", allowInvalid=TRUE,
-                                   renderer = "
-           function (instance, td, row, col, prop, value, cellProperties) {
-             Handsontable.renderers.NumericRenderer.apply(this, arguments);
-             const transformType = instance.getDataAtCell(row, 2);
-             if (transformType === 'LogitNormal' || transformType === 'ProbitNormal') {
-               td.style.background = 'lightyellow';
-             } else {
-               td.style.background = 'grey';
-             }
-           }") |>
-            rhandsontable::hot_col("Eta", type = "checkbox") |>
-            rhandsontable::hot_col("lower", type = "numeric", allowInvalid = TRUE) |>
-            rhandsontable::hot_col("upper", type = "numeric", allowInvalid = TRUE)
-        ## } else {
-        ##   fullPar <- df[!is.na(df$lhs), ]
-        ##   as.data.frame(t(setNames(fullPar[,c("est")], fullPar$lhs))) %>%
-        ##     rhandsontable::rhandsontable(rowHeaders = FALSE)
-        ## }
-      })
-    })
-
-    observeEvent(input$initalEstimates, {
-      req(input$initalEstimates)
-      modifiedDf <- rhandsontable::hot_to_r(input$initalEstimates)
-
-      if (!all(dim(parEstDF()) == dim(modifiedDf))) {
-        modifiedDf <- modifiedDf[1:nrow(parEstDF()), names(parEstDF())]
-      }
-
-      changedDf(trackChanges(parEstDF(), modifiedDf))
-      rowChanges(trackChangesWithinRow(parEstDF(), modifiedDf))
-
-      changedRowsDf <- data.frame(
-        Row = which(sapply(rowChanges(), any)),
-        ChangedColumns = sapply(rowChanges()[which(sapply(rowChanges(), any))], function(cols) {
-          paste(names(parEstDF())[which(cols)], collapse = ", ")
-        })
-      )
-
-      changeMessages(generateChangeMessages(changedRowsDf, modifiedDf))
-
-      # Store the changeMessages in results$ParEstimates
-      results$ParEstimates <- changeMessages()
-    })
-
-    output$changedEstimates <- rhandsontable::renderRHandsontable({
-      req(changedDf())
-      rhandsontable::rhandsontable(changedDf())
     })
 
   })
