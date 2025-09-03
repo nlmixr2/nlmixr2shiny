@@ -1,97 +1,5 @@
-.errDist <- list(
-  "dpois" = 1,
-  "pois" = 1,
-  "dbinom" = 1:2,
-  "binom"=1:2,
-  "dbern" = 1,
-  "bern" = 1,
-  "dbeta" = 2, # non-central isn't supported by stan so drop support
-  "beta" = 2,
-  "dt" = 1, # non-central isn't supported by stan, so drop
-  "t" = 1,
-  ##
-  ## "dnbinom"=2:3,  ## dnbinom is in R; FIXME: how does ot compare to dneg_binomial
-  ## "dneg_binomial", ## not in base R (but in glnmm2)
-  ##
-  ## Available as external package http://ugrad.stat.ubc.ca/R/library/rmutil/html/BetaBinom.html
-  ## "dbetabinomial", ## not in base R (but in glnmm2)
-  "add" = 1,
-  "norm" = 0,
-  "dnorm" = 0,
-  "prop" = 1,
-  "propT" = 1,
-  "propF" = 2,
-  "pow" = 2,
-  "powT" = 2,
-  "powF"=3,
-  "tbs" = 1,
-  "boxCox" = 1,
-  "tbsYj" = 1,
-  "yeoJohnson" = 1,
-  "logn" = 1,
-  "lnorm" = 1,
-  "dlnorm" = 1,
-  "dlogn" = 1,
-  "logitNorm" = 1:3,
-  "probitNorm" = 1:3,
-  "combined1"=0,
-  "combined2"=0,
-  "var"=0,
-  "dv"=0,
-  "comb1"=0,
-  "comb2"=0,
-  "dchisq"=1,
-  "chisq"=1,
-  "dexp"=0:1,
-  "df"=2:3,
-  "f"=2:3,
-  "dgeom"=1,
-  "geom"=1,
-  #  "dhyper"=3,
-  #  "hyper"=3,
-  "dunif"=0:2,
-  "unif"=0:2,
-  "dweibull"=1:2,
-  "weibull"=1:2,
-  "cauchy"= 0,
-  "dcauchy"= 0:2,
-  "dgamma"=1:2,
-  "nbinom"=2,
-  "dnbinom"=2,
-  "nbinomMu"=2,
-  "dnbinomMu"=2
-)
-
-.namedArgumentsToPredDf <- list(
-  add="a",
-  lnorm="a",
-  boxCox="lambda",
-  yeoJohnson="lambda",
-  pow=c("b", "c"),
-  powT=c("b", "c"),
-  powF=c("b", "c", "f"),
-  prop="b",
-  propT="b",
-  propF=c("b", "f"),
-  t=c("d", "e"),
-  pois=c("a"),
-  binom=c("a", "b"),
-  beta=c("a", "b",  "c"),
-  chisq=c("a", "b"), #6
-  dexp=c("a"), #7
-  f=c("a", "b", "c"), #8
-  geom=c("a"), #9
-  #  hyper=c("a", "b", "c"), #10
-  unif=c("a", "b"), #11
-  weibull=c("a", "b"), #12
-  cauchy=c("a", "b"),
-  dgamma=c("a", "b"),
-  nbinom=c("a", "b"),
-  nbinomMu=c("a", "b")
-)
-
-
-
+.residInfoEnv <- new.env(parent=emptyenv())
+.residInfoEnv$modelPars <- NULL
 #' This creates the residual data frame for
 #'
 #' @param line line to parse
@@ -103,30 +11,96 @@
 #' @keywords internal
 #'
 #' @author Matthew L. Fidler
-residDf <- function(line) {
-  UseMethod("residDf")
+residInfo <- function(line) {
+  .residInfoEnv$modelPars <- NULL
+  UseMethod("residInfo")
 }
 
-residDfObject <- function(x, line) {
+residInfoObject <- function(x, line) {
   predDf <- x$predDf
   if (line > nrow(predDf)) {
     return(NULL)
   }
   predLine <- predDf[line, ]
   ret <- list(x, predLine, line)
-  class(ret) <- c(paste(predLine$distribution), "residDf")
+  class(ret) <- c(paste(predLine$distribution), "residInfo")
   ret
 }
+#' Get the description as written in the shiny app of traditional error models
+#'
+#'
+#' @param line one line from the predDf object
+#' @returncharacter string of the error model
+#' @noRd
+#' @author Matthew L. Fidler
+.residErrorModelLine <- function(line) {
+  .errType <- as.integer(line$errType)
+  .resid <- switch(.errType,
+                   "Additive",
+                   "Proportional",
+                   "Power",
+                   "Additive + Proportional",
+                   "Additive + Power",
+                   NA_character_)
+  if (.errType %in% 4:5) {
+    .resid <- paste(.resid,
+                    switch(as.integer(line$addProp),
+                           "(Combined 1)",
+                           "(Combined 2)",
+                           "(Default)"))
+  }
+  .resid
+}
 
+.residTransformModelLine <- function(line) {
+  switch(as.integer(line$transform),
+         "Box-Cox",
+         "Yeo-Johnson",
+         "Untransformed",
+         "Log-normal",
+         "Logit-normal",
+         "Logit-normal + Yeo-Johsnon",
+         "Probit-normal",
+         "Probit-normal + Yeo-Johsnon",
+         "Logit-normal + Box-Cox",
+         "Probit-normal + Box-Cox")
+}
 
-#' @rdname residDf
+.residDistribution <- function(line) {
+  switch(as.integer(line$distribution),
+         "Normal",
+         "Poisson",
+         "Binomial",
+         "Beta",
+         "T",
+         "Chi-Squared",
+         "Exponential",
+         "F",
+         "Geometric",
+         "Hypergeometric",
+         "Uniform",
+         "Weibull",
+         "Cauchy",
+         "Gamma",
+         "Ordinal",
+         "Log-likelihood",
+         "Normal (AD)",
+         "Negative Binomial",
+         "Negative Binomial (mu)")
+}
+
+#' @rdname residInfo
 #' @export
-residDf.rxUi <- function(line) {
+residInfo.rxUi <- function(line) {
   predDf <- line$predDf
-  lapply(seq_along(predDf$cond), function(c) {
-    mod <- residDfObject(line, c)
-    residDf(mod)
-  })
+  c(setNames(lapply(seq_along(predDf$cond), function(c) {
+    mod <- residInfoObject(line, c)
+    list(df=residInfo(mod),
+         resErrorModel=.residErrorModelLine(predDf[c, ]),
+         transform=.residTransformModelLine(predDf[c, ]),
+         distribution=.residDistribution(predDf[c, ]))
+  }), predDf$var),
+  list(`_modelPars`=sort(unique(.residInfoEnv$modelPars))))
 }
 
 #' Get the additive transformation
@@ -138,7 +112,8 @@ residDf.rxUi <- function(line) {
 #' @noRd
 .residForErrorAdd <- function(env, pred1) {
   if (!is.na(pred1$a)) {
-    .p1 <- str2lang(pred1$a)
+    .residInfoEnv$modelPars <- c(.residInfoEnv$modelPars, pred1$a)
+    .p1 <- pred1$a
   } else {
     .cnd <- pred1$cond
     .w <- which(env$iniDf$err %in% c("add", "lnorm", "logitNorm", "probitNorm") & env$iniDf$condition == .cnd)
@@ -161,6 +136,7 @@ residDf.rxUi <- function(line) {
 #' @noRd
 .residForErrorProp <- function(env, pred1) {
   if (!is.na(pred1$b)) {
+    .residInfoEnv$modelPars <- c(.residInfoEnv$modelPars, pred1$b)
     .p1 <- pred1$b
   } else {
     .cnd <- pred1$cond
@@ -184,6 +160,7 @@ residDf.rxUi <- function(line) {
 .residForErrorPow <- function(env, pred1) {
   .cnd <- pred1$cond
   if (!is.na(pred1$b)) {
+    .residInfoEnv$modelPars <- c(.residInfoEnv$modelPars, pred1$b)
     .p1 <- pred1$b
   } else {
     .w <- which(env$iniDf$err %in% c("pow", "powF", "powT") & env$iniDf$condition == .cnd)
@@ -208,6 +185,7 @@ residDf.rxUi <- function(line) {
 
 .residForErrorAddProp <- function(env, pred1) {
   if (!is.na(pred1$a)) {
+    .residInfoEnv$modelPars <- c(.residInfoEnv$modelPars, pred1$a)
     .p1 <- pred1$a
   } else {
     .cnd <- pred1$cond
@@ -219,6 +197,7 @@ residDf.rxUi <- function(line) {
     }
   }
   if (!is.na(pred1$b)) {
+    .residInfoEnv$modelPars <- c(.residInfoEnv$modelPars, pred1$b)
     .p2 <- pred1$b
   } else {
     .cnd <- pred1$cond
@@ -241,6 +220,7 @@ residDf.rxUi <- function(line) {
 #' @noRd
 .residForErrorAddPow <- function(env, pred1) {
   if (!is.na(pred1$a)) {
+    .residInfoEnv$modelPars <- c(.residInfoEnv$modelPars, pred1$a)
     .p1 <- pred1$a
   } else {
     .cnd <- pred1$cond
@@ -252,6 +232,7 @@ residDf.rxUi <- function(line) {
     }
   }
   if (!is.na(pred1$b)) {
+    .residInfoEnv$modelPars <- c(.residInfoEnv$modelPars, pred1$b)
     .p2 <- pred1$b
   } else {
     .cnd <- pred1$cond
@@ -263,6 +244,7 @@ residDf.rxUi <- function(line) {
     }
   }
   if (!is.na(pred1$c)) {
+    .residInfoEnv$modelPars <- c(.residInfoEnv$modelPars, pred1$c)
     .p3 <- pred1$c
   } else {
     .cnd <- pred1$cond
@@ -328,8 +310,8 @@ residDf.rxUi <- function(line) {
       .nu <- paste(.iniDf$name[.w])
     } else {
       if (is.na(pred1$d)) {
-        stop("t distribution needs a proper degrees of freedom specified",
-             call. = FALSE)
+        stop("t distribution needs a proper degrees of freedom specified", #nocov
+             call. = FALSE) # nocov
       }
       .nu <- pred1$d
     }
@@ -358,9 +340,9 @@ residDf.rxUi <- function(line) {
   }
 }
 
-#' @rdname residDf
+#' @rdname residInfo
 #' @export
-residDf.norm <- function(line) {
+residInfo.norm <- function(line) {
   env <- line[[1]]
   pred1 <- line[[2]]
   .ret <- .residGetVarianceForErrorType(env, pred1) |>
@@ -373,17 +355,17 @@ residDf.norm <- function(line) {
 
 # Special cases for t and cauchy, simply use norm
 
-#' @rdname residDf
+#' @rdname residInfo
 #' @export
-residDf.t <-  residDf.norm
+residInfo.t <-  residInfo.norm
 
-#' @rdname residDf
+#' @rdname residInfo
 #' @export
-residDf.cauchy <-  residDf.norm
+residInfo.cauchy <-  residInfo.norm
 
-#' @rdname residDf
+#' @rdname residInfo
 #' @export
-residDf.dnorm <- residDf.norm
+residInfo.dnorm <- residInfo.norm
 .residDistributionNames <-
   list(
     pois = c("lambda"),
@@ -401,9 +383,9 @@ residDf.dnorm <- residDf.norm
     nbinomMu = c("size", "mu")
   )
 
-#' @rdname residDf
+#' @rdname residInfo
 #' @export
-residDf.default <- function(line) {
+residInfo.default <- function(line) {
   env <- line[[1]]
   pred1 <- line[[2]]
   .dist <- as.character(pred1$distribution)
@@ -414,6 +396,8 @@ residDf.default <- function(line) {
     return(data.frame(line=deparse1(env$lstExpr[[pred1$line]]),
                       row.names=pred1$var))
   }
+  .errDist <- rxode2::.getErrDist()
+  .namedArgumentsToPredDf <- rxode2::.getNamedArgumentsToPredDf()
   .nargs <- max(.errDist[[.dist]])
   .cnd <- pred1$cond
   .argName <- .namedArgumentsToPredDf[[.dist]]

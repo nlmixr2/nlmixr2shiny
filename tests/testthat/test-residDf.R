@@ -63,8 +63,10 @@ test_that("ordinal simulation", {
 
   tmp <- ord()
 
-  expect_equal(residDf(tmp),
-               list(data.frame(line = "y ~ c(p0 = 0, p1 = 1, p2 = 2, p3 = 3, p4 = 4, p5 = 5, p6 = 6, p7 = 7, p8 = 8, p9 = 9, 10)", row.names = "y")))
+  expect_equal(residInfo(tmp),
+               list(y = list(df = data.frame(line = "y ~ c(p0 = 0, p1 = 1, p2 = 2, p3 = 3, p4 = 4, p5 = 5, p6 = 6, p7 = 7, p8 = 8, p9 = 9, 10)", row.names = "y"),
+                             resErrorModel = NA_character_, transform = "Untransformed",
+                             distribution = "Ordinal"), `_modelPars` = NULL))
 
 })
 
@@ -89,9 +91,15 @@ test_that("log-likelihood", {
 
   tmp <- rxode2::rxode2(f)
 
-  expect_equal(residDf(tmp),
-               list(data.frame(add = "add.sd",row.names = "kpd"),
-                    data.frame(LL = "p2", row.names = "lik")))
+  expect_equal(residInfo(tmp),
+               list(kpd = list(df=data.frame(add = "add.sd", row.names = "kpd"),
+                               resErrorModel = "Additive", transform = "Untransformed",
+                               distribution = "Normal"),
+                    lik = list(df = data.frame(LL = "p2", row.names = "lik"),
+                               resErrorModel = NA_character_,
+                               transform = "Untransformed",
+                               distribution = "Log-likelihood"),
+                    `_modelPars` = NULL))
 
 })
 
@@ -118,9 +126,11 @@ test_that("dnorm()", {
 
   f <- rxode2::rxode2(f)
 
-  expect_equal(residDf(f),
-               list(data.frame(add = "add.err", lambda = "lambda",
-                               row.names = "cp")))
+  expect_equal(residInfo(f),
+               list(cp=list(df=data.frame(add = "add.err", lambda = "lambda",
+                                          row.names = "cp"),
+                    resErrorModel = "Additive", transform = "Box-Cox", distribution = "Normal (AD)"),
+               `_modelPars` = NULL))
 
 })
 
@@ -147,9 +157,11 @@ test_that("normal residal", {
 
   f <- rxode2::rxode2(f)
 
-  expect_equal(residDf(f),
-               list(data.frame(add = "add.err", lambda = "lambda",
-                               row.names = "cp")))
+  expect_equal(residInfo(f),
+               list(cp=list(df=data.frame(add = "add.err", lambda = "lambda",
+                                          row.names = "cp"),
+                            resErrorModel = "Additive", transform = "Box-Cox", distribution = "Normal"),
+                    `_modelPars` = NULL))
 
 })
 
@@ -177,9 +189,11 @@ test_that("t distribution", {
 
   f <- rxode2::rxode2(f)
 
-  expect_equal(residDf(f),
-               list(data.frame(prop = "add.err", df = "nu", lambda = "lambda",
-                    row.names = "cp")))
+  expect_equal(residInfo(f),
+               list(cp=list(df=data.frame(prop = "add.err", df = "nu",
+                                          lambda = "lambda", row.names = "cp"),
+                            resErrorModel = "Proportional", transform = "Box-Cox", distribution = "T"),
+                    `_modelPars` = NULL))
 
 })
 
@@ -198,9 +212,12 @@ test_that("pois data frame", {
 
   tmp <- rxode2::rxode2(f)
 
-  expect_equal(residDf(tmp),
-               list(data.frame(lambda = "lambda",
-                               row.names = "err")))
+  expect_equal(residInfo(tmp),
+               list(err = list(df = data.frame(lambda = "lambda", row.names = "err"),
+                               resErrorModel = NA_character_,
+                               transform = "Untransformed",
+                               distribution = "Poisson"),
+                    `_modelPars` = NULL))
 
 })
 
@@ -221,8 +238,12 @@ test_that("binom simulations", {
 
   tmp <- rxode2::rxode2(f)
 
-  expect_equal(residDf(tmp),
-               list(data.frame(size = "n", prob = "p", row.names = "err")))
+  expect_equal(residInfo(tmp),
+               list(err = list(df = data.frame(size = "n", prob = "p",
+                                               row.names = "err"),
+                               resErrorModel = NA_character_, transform = "Untransformed",
+                               distribution = "Binomial"),
+                    `_modelPars` = NULL))
 
 })
 
@@ -244,8 +265,12 @@ test_that("beta simulations", {
 
   tmp <- rxode2::rxode2(f)
 
-  expect_equal(residDf(tmp),
-               list(data.frame(shape1 = "alpha", shape2 = "beta", row.names = "err")))
+  expect_equal(residInfo(tmp),
+               list(err = list(df = data.frame(shape1 = "alpha", shape2 = "beta",
+                                               row.names = "err"),
+                               resErrorModel = NA_character_, transform = "Untransformed",
+                               distribution = "Beta"),
+                    `_modelPars` = NULL))
 })
 
 test_that("chisq simulations", {
@@ -263,8 +288,11 @@ test_that("chisq simulations", {
 
   tmp <- rxode2::rxode2(f)
 
-  expect_equal(residDf(tmp),
-               list(data.frame(df = "nu", row.names = "err")))
+  expect_equal(residInfo(tmp),
+               list(err=list(df=data.frame(df = "nu", row.names = "err"),
+                             resErrorModel = NA_character_, transform = "Untransformed",
+                             distribution = "Chi-Squared"),
+                    `_modelPars` = NULL))
 
 })
 
@@ -283,8 +311,11 @@ test_that("dexp simulations", {
 
   tmp <- rxode2::rxode2(f)
 
-  expect_equal(residDf(tmp),
-               list(data.frame(rate = "r", row.names = "err")))
+  expect_equal(residInfo(tmp),
+               list(err=list(df=data.frame(rate = "r", row.names = "err"),
+                             resErrorModel = NA_character_, transform = "Untransformed",
+                             distribution = "Exponential"),
+                    `_modelPars` = NULL))
 
 })
 
@@ -306,8 +337,11 @@ test_that("unif simulations", {
 
   tmp <- rxode2::rxode2(f)
 
-  expect_equal(residDf(tmp),
-               list(data.frame(min = "a", max = "b", row.names = "err")))
+  expect_equal(residInfo(tmp),
+               list(err=list(df=data.frame(min = "a", max = "b", row.names = "err"),
+                             resErrorModel = NA_character_, transform = "Untransformed",
+                             distribution = "Uniform"),
+                    `_modelPars` = NULL))
 
 })
 
@@ -329,8 +363,11 @@ test_that("rweibull simulations", {
 
   tmp <- rxode2::rxode2(f)
 
-  expect_equal(residDf(tmp),
-               list(data.frame(shape = "a", scale = "b", row.names = "err")))
+  expect_equal(residInfo(tmp),
+               list(err=list(df=data.frame(shape = "a", scale = "b", row.names = "err"),
+                             resErrorModel = NA_character_, transform = "Untransformed",
+                             distribution = "Weibull"),
+                    `_modelPars` = NULL))
 
 })
 
@@ -357,9 +394,12 @@ test_that("rcauchy simulations", {
 
   tmp <- rxode2::rxode2(f)
 
-  expect_equal(residDf(tmp),
-               list(data.frame(prop = "add.err", lambda = "lambda",
-                               row.names = "cp")))
+  expect_equal(residInfo(tmp),
+               list(cp=list(df=data.frame(prop = "add.err", lambda = "lambda",
+                                          row.names = "cp"),
+                            resErrorModel = "Proportional",
+                            transform = "Box-Cox", distribution = "Cauchy"),
+                    `_modelPars` = NULL))
 
 })
 
@@ -381,9 +421,12 @@ test_that("rgamma simulations", {
 
   tmp <- rxode2::rxode2(f)
 
-  expect_equal(residDf(tmp),
-               list(data.frame(shape = "a", scale = "b",
-                               row.names = "err")))
+  expect_equal(residInfo(tmp),
+               list(err=list(df=data.frame(shape = "a", scale = "b",
+                                           row.names = "err"),
+                             resErrorModel = NA_character_, transform = "Untransformed",
+                             distribution = "Gamma"),
+                    `_modelPars` = NULL))
 
 })
 
@@ -402,8 +445,11 @@ test_that("rgeom simulations", {
 
   tmp <- rxode2::rxode2(f)
 
-  expect_equal(residDf(tmp),
-               list(data.frame(prob = "a", row.names = "err")))
+  expect_equal(residInfo(tmp),
+               list(err=list(df=data.frame(prob = "a", row.names = "err"),
+                             resErrorModel = NA_character_, transform = "Untransformed",
+                             distribution = "Geometric"),
+                    `_modelPars` = NULL))
 
 })
 
@@ -424,8 +470,11 @@ test_that("negative binomial simulation", {
 
   tmp <- rxode2::rxode2(f)
 
-  expect_equal(residDf(tmp),
-               list(data.frame(size = "n", prob = "p", row.names = "err")))
+  expect_equal(residInfo(tmp),
+               list(err=list(df=data.frame(size = "n", prob = "p", row.names = "err"),
+                    resErrorModel = NA_character_, transform = "Untransformed",
+                    distribution = "Negative Binomial"),
+               `_modelPars` = NULL))
 
 })
 
@@ -446,7 +495,79 @@ test_that("negative binomial simulation", {
 
   tmp <- rxode2::rxode2(f)
 
-  expect_equal(residDf(tmp),
-               list(data.frame(size = "n", mu = "p", row.names = "err")))
+  expect_equal(residInfo(tmp),
+               list(err=list(df=data.frame(size = "n", mu = "p", row.names = "err"),
+                             resErrorModel = NA_character_, transform = "Untransformed",
+                             distribution = "Negative Binomial (mu)"),
+                    `_modelPars` = NULL))
+})
+
+
+test_that("prop where parameter is in model", {
+
+  f <- function() {
+    ini({
+      tcl <- log(0.008)
+      tv <-  log(0.6)
+      eta.cl + eta.v ~ c(1,
+                         0.01, 1)
+      add.err <- 0.1
+      lambda <- 0.5
+    })
+    model({
+      cl <- exp(tcl + eta.cl) # individual value of clearance
+      v <- exp(tv + eta.v)    # individual value of volume
+      ke <- cl / v            # elimination rate constant
+      d/dt(A1) = - ke * A1    # model differential equation
+      cp = A1 / v             # concentration in plasma
+      prop.err <- add.err
+      cp ~ prop(prop.err) + boxCox(lambda)# define error model
+    })
+  }
+
+  tmp <- rxode2::rxode2(f)
+
+  expect_equal(residInfo(tmp),
+               list(cp=list(df=data.frame(prop = "prop.err", lambda = "lambda",
+                                       row.names = "cp"),
+                            resErrorModel = "Proportional", transform = "Box-Cox",
+                            distribution = "Normal"),
+                    `_modelPars` = "prop.err"))
+
+})
+
+test_that("add+prop", {
+
+  f <- function() {
+    ini({
+      tcl <- log(0.008)
+      tv <-  log(0.6)
+      eta.cl + eta.v ~ c(1,
+                         0.01, 1)
+      add.err <- 0.1
+      lambda <- 0.5
+    })
+    model({
+      cl <- exp(tcl + eta.cl) # individual value of clearance
+      v <- exp(tv + eta.v)    # individual value of volume
+      ke <- cl / v            # elimination rate constant
+      d/dt(A1) = - ke * A1    # model differential equation
+      cp = A1 / v             # concentration in plasma
+      prop.err <- add.err
+      cp ~ add(prop.err) + prop(prop.err) + boxCox(lambda)# define error model
+    })
+  }
+
+  tmp <- rxode2::rxode2(f)
+
+  expect_equal(residInfo(tmp),
+               list(cp = list(df = data.frame(add = "prop.err",
+                                              prop = "prop.err",
+                                              lambda = "lambda",
+                                              row.names = "cp"),
+                              resErrorModel = "Additive + Proportional (Default)",
+                              transform = "Box-Cox",
+                              distribution = "Normal"),
+                    `_modelPars` = "prop.err"))
 
 })
