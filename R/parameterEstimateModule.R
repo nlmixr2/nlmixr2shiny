@@ -43,13 +43,14 @@ ParEstServer <- function(id, results) {
 
     observeEvent(results$parEstim, {
       req(results$parEstim)
-
       output$initalEstimates <-
         rhandsontable::renderRHandsontable({
-          if (is.null(iniDf())) {
-            .df <- results$parEstim$iniDf
-            .df <- .df[!is.na(.df$ntheta), ]
-            .df <- as.data.frame(t(setNames(.df$est, .df$name)))
+          .df <- results$parEstim$iniDf
+          .df <- .df[!is.na(.df$ntheta), ]
+          .df <- as.data.frame(t(setNames(.df$est, .df$name)))
+          if (is.null(iniDf)) {
+            iniDf(.df)
+          } else if (!identical(names(iniDf()), names(.df))) {
             iniDf(.df)
           }
           iniDf() %>%
@@ -75,7 +76,7 @@ ParEstServer <- function(id, results) {
           if (length(.state) > 1) {
             dosingTable1Df(data.frame(
               amt = 1,
-              rate = NA_real_,
+              rate = NA_real_
             ))
           } else {
             dosingTable1Df(data.frame(
@@ -86,15 +87,16 @@ ParEstServer <- function(id, results) {
           }
         } else if (length(.state) > 1 && length(names(dosingTable1Df())) == 2) {
           dosingTable1Df(cbind(dosingTable1Df(), cmt = .state[1]))
-        } else if (length(.state) == 1 && length(names(dosingTable1Df())) == 3) {
+        } else if (length(.state) <= 1 && length(names(dosingTable1Df())) == 3) {
           dosingTable1Df(dosingTable1Df()[, -which(names(dosingTable1Df()) == "cmt")])
         }
 
-        .ret <- rhandsontable::rhandsontable(dosingTable1Df(), rowHeaders = FALSE,
+        .ret <- rhandsontable::rhandsontable(dosingTable1Df(),
+                                             rowHeaders = FALSE,
                                              overflow = "visible") |>
           rhandsontable::hot_col("amt", type = "numeric", allowInvalid = FALSE) |>
           rhandsontable::hot_col("rate", type = "numeric", allowInvalid = TRUE)
-        if (length(.state) > 1) {
+        if (length(.state) > 1 && any(names(dosingTable1Df()) == "cmt")) {
           .ret <- .ret |>
             rhandsontable::hot_col("cmt",
                                    type = "dropdown",

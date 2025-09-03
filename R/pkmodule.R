@@ -25,8 +25,17 @@ pkServer <- function(id, results) {
         shinyWidgets::radioGroupButtons(
           inputId = ns("modelTypeSwitch"),
           label = NULL,
-          choices = c("Model Builder", "Model Library", "Model Import", "Current Model"),
+          choices = c("Reset Model", "Current Model"),
           selected = "Current Model")
+      } else if (length(results$modelModified) == 0 ||
+                   is.na(results$modelModified)) {
+        shinyWidgets::radioGroupButtons(
+          inputId = ns("modelTypeSwitch"),
+          label = NULL,
+          choices = c("Model Builder", "Model Library", "Model Import"),
+          selected = "Model Builder")
+        results$modelModified <- FALSE
+        results$pkpdm <- NULL
       } else {
         shinyWidgets::radioGroupButtons(
           inputId = ns("modelTypeSwitch"),
@@ -37,8 +46,9 @@ pkServer <- function(id, results) {
     })
     output$modelTypeUi <- renderUI({
       req(input$modelTypeSwitch)
-      if (input$modelTypeSwitch == "Model Builder") {
-        results$modelModified <- FALSE
+      if (input$modelTypeSwitch == "Reset Model") {
+        results$modelModified <- NA
+      } else if (input$modelTypeSwitch == "Model Builder") {
         list(
           shinyWidgets::materialSwitch(ns("pk_switch"), label = "PK", value = TRUE),
           conditionalPanel(
@@ -97,7 +107,6 @@ pkServer <- function(id, results) {
           )
         )
       } else if (input$modelTypeSwitch == "Model Library") {
-        results$modelModified <- FALSE
         list(
           fluidRow(
             column(
@@ -123,7 +132,7 @@ pkServer <- function(id, results) {
           fluidRow(
             column(
               width = 12,
-              h4("Current model in use, reset the model by selecting Model Builder, Model Library, or Import a model."),
+              h4("Current model in use, you reset the model to use Model Builder, Model Library, or Import a model"),
               verbatimTextOutput(ns("currentModelOutput"))
             )
           )
