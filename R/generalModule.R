@@ -61,6 +61,7 @@ resetInitialModel <- function(results) {
   if (!isTRUE(results$modelModified)) {
     results$pkpdm <- NULL
   }
+  results$rxsolve <- NULL
   results$iniDf <- NULL
   results$paramNames <- NULL
   results$backTransform <- NULL
