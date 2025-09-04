@@ -1,3 +1,40 @@
+updateParEstimWithEsts <- function(results) {
+  if (is.null(results$parEstim) ||
+        is.null(results$iniDf) ||
+        is.null(results$paramNames)) {
+    return()
+  }
+  .iniDf <- results$parEstim$iniDf
+  .est <- unlist(results$iniDf)
+  if (isTRUE(results$backTransform)) {
+    .curEval <- results$parEstim$muRefCurEval
+    .name <- results$paramNames
+    .est <- vapply(seq_along(.est), function(i) {
+      .n <- .name[i]
+      .w <- which(.curEval$parameter == .n)
+      if (length(.w) != 1) {
+        return(.est[i])
+      }
+      .type <- .curEval$curEval[.w]
+      .low <-  .curEval$low[.w]
+      .hi <-  .curEval$hi[.w]
+      if (.type == "exp") {
+        exp(.est[i])
+      } else if (.type == "expit") {
+        rxode2::expit(.est[i], .low, .hi)
+      } else if (.type == "probitInv") {
+        rxode2::probitInv(.est[i], .low, .hi)
+      } else {
+        .est[i]
+      }
+    }, numeric(1), USE.NAMES=FALSE)
+  }
+  .iniDf[!is.na(.iniDf$ntheta), "est"] <- .est
+  mod <- rxode2::rxUiDecompress(results$parEstim)
+  mod$iniDf <- .iniDf
+  results$parEstim <- rxode2::rxUiCompress(mod)
+}
+
 ParEstUI <- function(id) {
   ns <- NS(id)
   tagList(
@@ -49,13 +86,16 @@ ParEstServer <- function(id, results) {
 
     iniDf <- reactiveVal(NULL)
 
+    observeEvent(input$initalEstimates, {
+      results$iniDf <- rhandsontable::hot_to_r(input$initalEstimates)
+    })
     observeEvent(input$backTransform, {
       req(iniDf())
       req(results$parEstim)
       req(results$paramNames)
 
       .curEval <- results$parEstim$muRefCurEval
-      .cur <- iniDf()
+      .cur <- rhandsontable::hot_to_r(input$initalEstimates)
       results$backTransform <- input$backTransform
       if (isTRUE(input$backTransform)) {
         # Change to back-transform

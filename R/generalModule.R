@@ -61,6 +61,7 @@ resetInitialModel <- function(results) {
   if (!isTRUE(results$modelModified)) {
     results$pkpdm <- NULL
   }
+  results$iniDf <- NULL
   results$paramNames <- NULL
   results$backTransform <- NULL
   results$modProp <- NULL
@@ -219,17 +220,20 @@ nlmixr2model <- function() {
 
       if (tab == "PKPD Model") {
         resetInitialModel(results)
+        updateParEstimWithEsts(results)
       } else if (tab == "Model Property") {
         calculatingInitialModel(results)
+        updateParEstimWithEsts(results)
       } else if (tab == "Population Estimates") {
         calculatingInitialModel(results)
         calculatingParameterEstimate(results)
+        updateParEstimWithEsts(results)
         req(results$pkpdm)
       } else if (tab == "Statistical Model") {
         calculatingInitialModel(results)
         calculatingParameterEstimate(results)
         calculatingStatisticalModel(results)
-        req(results$parEstim)
+        updateParEstimWithEsts(results)
       } else if (tab == "Explore Data") {
         calculatingInitialModel(results)
         calculatingParameterEstimate(results)
@@ -239,6 +243,7 @@ nlmixr2model <- function() {
         calculatingInitialModel(results)
         calculatingParameterEstimate(results)
         calculatingStatisticalModel(results)
+        updateParEstimWithEsts(results)
         req(results$parEstim)
       }
     })
