@@ -27,11 +27,11 @@ updateParEstimWithEsts <- function(results) {
       .low <-  .curEval$low[.w]
       .hi <-  .curEval$hi[.w]
       if (.type == "exp") {
-        exp(.est[i])
+        log(.est[i])
       } else if (.type == "expit") {
-        rxode2::expit(.est[i], .low, .hi)
+        rxode2::logit(.est[i], .low, .hi)
       } else if (.type == "probitInv") {
-        rxode2::probitInv(.est[i], .low, .hi)
+        rxode2::probit(.est[i], .low, .hi)
       } else {
         .est[i]
       }
@@ -40,7 +40,7 @@ updateParEstimWithEsts <- function(results) {
   .iniDf[!is.na(.iniDf$ntheta), "est"] <- .est
   mod <- rxode2::rxUiDecompress(results$parEstim)
   mod$iniDf <- .iniDf
-  results$parEstim <- rxode2::rxUiCompress(mod)
+  results$pkpdm <- results$parEstim <- rxode2::rxUiCompress(mod)
 }
 #'  This is the parameter estimates user interface
 #'
@@ -88,6 +88,12 @@ ParEstUI <- function(id) {
 }
 
 solveODE <- function(input, output, session, results, id) {
+  waiter::waiter_show(html = tagList(
+    waiter::spin_fading_circles(),  # A nice spinning loading indicator
+    h4("solving system...")
+  ))
+  updateParEstimWithEsts(results)
+
   ns <- NS(id)
   d1 <- rhandsontable::hot_to_r(input$dosingTable1)
   d2 <- rhandsontable::hot_to_r(input$dosingTable2)
@@ -135,34 +141,7 @@ solveODE <- function(input, output, session, results, id) {
     results$parEstim,
     et, nSub=nSub
   )
-  output$plotTabs <- renderUI({
-    if (is.null(results$rxsolve)) {
-      return(tabsetPanel())
-    }
-    vars <- colnames(results$rxsolve)
-    vars <- vars[!vars %in% c("time", "id", "sim.id", "evid", "cmt", "amt", "rate", "ii", "addl", "ss", "dur", "tad", "mdv", "resetno")]
-
-    v1 <- results$parEstim$predDf$var[1]
-    if (!(v1 %in% vars)) v1 <- vars[1]
-    if (is.null(input$plotTabs)) {
-      selTab <- v1
-    } else if (input$plotTabs %in% vars) {
-      selTab <- input$plotTabs
-    } else {
-      selTab <- v1
-    }
-    tabs <-
-      lapply(vars, function(v) {
-        plotname0 <- paste0("plot", v)
-        plotname <- ns(plotname0)
-        output[[plotname0]] <- renderPlot({
-          eval(bquote(plot(results$rxsolve, .(str2lang(v)))))
-        })
-        tabPanel(v, plotOutput(plotname))
-      })
-    do.call(tabsetPanel, c(tabs, id = ns("plotTabs"), selected = selTab))
-  })
-
+  waiter::waiter_hide()
 }
 
 #'
@@ -181,8 +160,6 @@ ParEstServer <- function(id, results) {
     dosingTable1Df <- reactiveVal(NULL)
     dosingTable2Df <- reactiveVal(NULL)
     plotOptionsDf <- reactiveVal(NULL)
-    solved <- reactiveVal(NULL)
-    msg <- reactiveVal(NULL)
 
     iniDf <- reactiveVal(NULL)
 
@@ -262,7 +239,6 @@ ParEstServer <- function(id, results) {
           }
           .thetaLhsDf$lhs[.w]
         }, character(1), USE.NAMES=FALSE)
-        print(.name)
         names(.cur) <- .name
       } else {
         names(.cur) <- results$paramNames
@@ -272,6 +248,8 @@ ParEstServer <- function(id, results) {
 
     observeEvent(results$parEstim, {
       req(results$parEstim)
+      iniDf(NULL)
+
       output$initalEstimates <-
         rhandsontable::renderRHandsontable({
           .df <- results$parEstim$iniDf
@@ -404,6 +382,45 @@ ParEstServer <- function(id, results) {
           rhandsontable::hot_col("step", type = "numeric", allowInvalid = FALSE)
       })
 
+    })
+
+    observeEvent(results$rxsolve, {
+      output$plotTabs <- renderUI({
+        if (is.null(results$rxsolve) ||
+              is.null(results$parEstim)) {
+          return(tabsetPanel())
+        }
+        vars <- colnames(results$rxsolve)
+        vars <- vars[!vars %in% c("time", "id", "sim.id", "evid", "cmt", "amt", "rate", "ii", "addl", "ss", "dur", "tad", "mdv", "resetno")]
+        v1 <- results$parEstim$predDf$var[1]
+        if (!(v1 %in% vars)) v1 <- vars[1]
+        if (is.null(input$plotTabs)) {
+          selTab <- v1
+        } else if (input$plotTabs %in% vars) {
+          selTab <- input$plotTabs
+        } else {
+          selTab <- v1
+        }
+        tabs <-
+          lapply(vars, function(v) {
+            plotname0 <- paste0("plot", v)
+            plotname <- ns(plotname0)
+            output[[plotname0]] <- renderPlot({
+              p <- try(eval(bquote(plot(results$rxsolve, .(str2lang(v))))))
+              if (inherits(p,"try-error")) {
+                plot.new()
+                text(0.5, 0.5, paste("Error in plotting", v, ":", p))
+              } else {
+                if (isTRUE(plotOptionsDf()$logy)) {
+                  p <- p + xgxr::xgx_scale_y_log10()
+                }
+                p
+              }
+            })
+            tabPanel(v, plotOutput(plotname))
+          })
+        do.call(tabsetPanel, c(tabs, id = ns("plotTabs"), selected = selTab))
+      })
     })
 
   })

@@ -16,7 +16,7 @@ calculatingInitialModel <-function(results) {
       if (length(.ls) == 1L) {
         message("evaluates to one model, save model")
         resetInitialModel(results)
-        results$pkpdm <- rxode2::rxode2(get(.ls, envir = .env))
+        results$pkpdm <- results$parEstim <- rxode2::rxode2(get(.ls, envir = .env))
       }
     }
     results$ace <- NULL
