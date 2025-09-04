@@ -61,6 +61,8 @@ resetInitialModel <- function(results) {
   if (!isTRUE(results$modelModified)) {
     results$pkpdm <- NULL
   }
+  results$paramNames <- NULL
+  results$backTransform <- NULL
   results$modProp <- NULL
   results$parEstim <- NULL
   results$forCov <- NULL

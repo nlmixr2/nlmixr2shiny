@@ -16,7 +16,7 @@ aceServer <- function(id, results) {
 
     observeEvent(results$forCov, {
       req(results$forCov)
-      editorContent(paste0("model <- ", paste(deparse(as.function(results$forCov)), collapse="\n")))
+      editorContent(paste0("mod1 <- ", paste(deparse(as.function(results$forCov)), collapse="\n")))
       shinyAce::updateAceEditor(session,
                                 editorId="ace",
                                 value = editorContent())
@@ -32,7 +32,7 @@ aceServer <- function(id, results) {
                          type = "message")
       }
       if (rstudioapi::isAvailable()) {
-        rstudioapi::viewer("about:blank")  # Close the viewer
+        shiny::stopApp()  # Stop the Shiny app
       }
     })
   })
@@ -42,17 +42,17 @@ aceUI <- function(id) {
   ns <- NS(id)
   tagList(
     fluidRow(
-      column(1,  actionButton(ns("copyCode"),
+      column(4,  actionButton(ns("copyCode"),
                                ifelse(rstudioapi::isAvailable(),
                                       "Insert & Exit",
                                       "Copy"))),
-      column(5, {
+      column(4, {
         selectInput(ns("theme"), NULL,
                     shinyAce::getAceThemes(),
                     selected="solarized_light",
                     multiple=FALSE)
       }),
-      column(6, {
+      column(4, {
         sliderInput(ns("fontSize"),NULL,min=6,max=24,value=14,step=1)
       })
     ),

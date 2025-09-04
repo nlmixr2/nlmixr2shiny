@@ -18,7 +18,15 @@ ParEstUI <- function(id) {
           column(
             10,
             fluidRow(
-              h4("Parameters (listed in back-transformed values)"),
+              column(4, h4("Pop. Parameters")),
+              column(4, shinyWidgets::awesomeCheckbox(
+                inputId = ns("backTransform"),
+                label = "Back-transform the estimates",
+                value = TRUE)),
+              column(4, shinyWidgets::awesomeCheckbox(
+                inputId = ns("useLhs"),
+                label = "Use model defined parameter",
+                value = TRUE)),
               rhandsontable::rHandsontableOutput(ns("initalEstimates")),
               uiOutput("message", placeholder = FALSE),
               uiOutput("plotTabs")
@@ -41,19 +49,132 @@ ParEstServer <- function(id, results) {
 
     iniDf <- reactiveVal(NULL)
 
+    observeEvent(input$backTransform, {
+      req(iniDf())
+      req(results$parEstim)
+      req(results$paramNames)
+
+      .curEval <- results$parEstim$muRefCurEval
+      .cur <- iniDf()
+      results$backTransform <- input$backTransform
+      if (isTRUE(input$backTransform)) {
+        # Change to back-transform
+        for (i in seq_along(results$paramNames)) {
+          .n <- results$paramNames[i]
+          .w <- which(.curEval$parameter == .n)
+          if (length(.w) != 1) {
+            next
+          }
+          .type <- .curEval$curEval[.w]
+          .low <-  .curEval$low[.w]
+          .hi <-  .curEval$hi[.w]
+          if (.type == "exp") {
+            .cur[[i]] <- exp(.cur[[i]])
+          } else if (.type == "expit") {
+            .cur[[i]] <- rxode2::expit(.cur[[i]], .low, .hi)
+          } else if (.type == "probitInv") {
+            .cur[[i]] <- rxode2::probitInv(.cur[[i]], .low, .hi)
+          } else {
+            next
+          }
+        }
+      } else {
+        # Change to un-transformed
+        for (i in seq_along(results$paramNames)) {
+          .n <- results$paramNames[i]
+          .w <- which(.curEval$parameter == .n)
+          if (length(.w) != 1) {
+            next
+          }
+          .type <- .curEval$curEval[.w]
+          .low <-  .curEval$low[.w]
+          .hi <-  .curEval$hi[.w]
+          if (.type == "exp") {
+            .cur[[i]] <- log(.cur[[i]])
+          } else if (.type == "expit") {
+            .cur[[i]] <- rxode2::logit(.cur[[i]], .low, .hi)
+          } else if (.type == "probitInv") {
+            .cur[[i]] <- rxode2::probit(.cur[[i]], .low, .hi)
+          } else {
+            next
+          }
+        }
+      }
+      iniDf(.cur)
+    })
+
+    observeEvent(input$useLhs, {
+      req(iniDf())
+      req(results$parEstim)
+      req(results$paramNames)
+      .cur <- iniDf()
+      if (isTRUE(input$useLhs)) {
+        .thetaLhsDf <- results$parEstim$thetaLhsDf
+        .name <- vapply(results$paramNames, function(n) {
+          .w <- which(.thetaLhsDf$theta == n)
+          if (length(.w) != 1) {
+            return(n)
+          }
+          .thetaLhsDf$lhs[.w]
+        }, character(1), USE.NAMES=FALSE)
+        print(.name)
+        names(.cur) <- .name
+      } else {
+        names(.cur) <- results$paramNames
+      }
+      iniDf(.cur)
+    })
+
     observeEvent(results$parEstim, {
       req(results$parEstim)
       output$initalEstimates <-
         rhandsontable::renderRHandsontable({
           .df <- results$parEstim$iniDf
           .df <- .df[!is.na(.df$ntheta), ]
-          .df <- as.data.frame(t(setNames(.df$est, .df$name)))
-          if (is.null(iniDf)) {
-            iniDf(.df)
-          } else if (!identical(names(iniDf()), names(.df))) {
+          if (is.null(iniDf()) ||
+                !identical(results$paramNames, .df$name)) {
+            .name <- .df$name
+            .est <- .df$est
+            .curEval <- results$parEstim$muRefCurEval
+            .thetaLhsDf <- results$parEstim$thetaLhsDf
+            .resetIniDf <- FALSE
+
+            if (isTRUE(input$backTransform)) {
+              .est <- vapply(seq_along(.est), function(i) {
+                .n <- .name[i]
+                .w <- which(.curEval$parameter == .n)
+                if (length(.w) != 1) {
+                  return(.est[i])
+                }
+                .type <- .curEval$curEval[.w]
+                .low <-  .curEval$low[.w]
+                .hi <-  .curEval$hi[.w]
+                if (.type == "exp") {
+                  exp(.est[i])
+                } else if (.type == "expit") {
+                  rxode2::expit(.est[i], .low, .hi)
+                } else if (.type == "probitInv") {
+                  rxode2::probitInv(.est[i], .low, .hi)
+                } else {
+                  .est[i]
+                }
+              }, numeric(1), USE.NAMES=FALSE)
+            }
+            .name0 <- results$paramNames <- .name
+            if (isTRUE(input$useLhs)) {
+              .name <- vapply(.name, function(n) {
+                .w <- which(.thetaLhsDf$theta == n)
+                if (length(.w) != 1) {
+                  return(n)
+                }
+                .thetaLhsDf$lhs[.w]
+              }, character(1), USE.NAMES=FALSE)
+            }
+            .df <- as.data.frame(t(setNames(.est, .name)))
             iniDf(.df)
           }
-          iniDf() %>%
+          results$backTransform <- input$backTransform
+          iniDf() |>
             rhandsontable::rhandsontable(rowHeaders = FALSE)
         })
 
@@ -129,7 +250,8 @@ ParEstServer <- function(id, results) {
           ))
         }
         rhandsontable::rhandsontable(timeSamplingDf(), rowHeaders = FALSE,
-                                     overflow = "visible") |>
+                                     overflow = "visible",
+                                     selectCallback=TRUE) |>
           rhandsontable::hot_col("start", type = "numeric", allowInvalid = FALSE) |>
           rhandsontable::hot_col("end", type = "numeric", allowInvalid = FALSE) |>
           rhandsontable::hot_col("step", type = "numeric", allowInvalid = FALSE)
