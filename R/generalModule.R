@@ -26,6 +26,7 @@ calculatingInitialModel <-function(results) {
       waiter::spin_fading_circles(),  # A nice spinning loading indicator
       h4("Calculating initial model...")
     ))
+    on.exit({waiter::waiter_hide()})
     if (isTRUE(results$modelModified)) {
     } else if (results$modelTypeSwitch == "Model Builder") {
       # Evaluate pipeline for results$pkpdm
@@ -45,8 +46,7 @@ calculatingInitialModel <-function(results) {
 
     # Reset the other results that depend on the initial model
     results$parEstim <- NULL
-    results$forCov <- NULL
-    waiter::waiter_hide()
+
   }
 }
 #' This resets the initial model calculations
@@ -67,66 +67,25 @@ resetInitialModel <- function(results) {
   results$backTransform <- NULL
   results$modProp <- NULL
   results$parEstim <- NULL
-  results$forCov <- NULL
 }
 
-#' This function is supposed to calculate the statistical model.
-#'
-#' @param results This Shiny list contains the results.
-#'
-#' @return nothing called for side effects
-#' @noRd
-calculatingStatisticalModel <-function(results) {
-  if (is.null(results$forCov)){
-    waiter::waiter_show(html = tagList(
-      waiter::spin_fading_circles(),  # A nice spinning loading indicator
-      h4("Calculating statistical model...")
-    ))
-
-    # Evaluate the pipeline for results$forCov
-    results$forCov <- eval(str2lang(paste(c("results$parEstim", results$ParEstimates), collapse = "|>\n\t")))
-
-    waiter::waiter_hide()
-  }
-}
 #' Calculate the parameter estimates table
 #'
 #' @param results results that allow the calculation of the parameter estimates table
 #' @return nothing, called for side effects
 #' @noRd
 calculatingParameterEstimate <-function(results) {
-  if (is.null(results$ParaEstim)) {
+  if (is.null(results$parEstim)) {
     waiter::waiter_show(html = tagList(
       waiter::spin_fading_circles(),  # A nice spinning loading indicator
       h4("Calculating parameter estimates...")
     ))
+    on.exit({waiter::waiter_hide()})
 
     # Evaluate the pipeline for results$ParaEstim
     results$parEstim <- eval(str2lang(paste(c("results$pkpdm", results$modProp), collapse = "|>\n\t")))
-    results$forCov <- NULL
-    waiter::waiter_hide()
   }
 }
-#' Calculate what is needed to explore the model with the data in the R environment
-#'
-#' @param results the results that need to be caluclated
-#' @return
-#' @export
-#' @author Matthew L. Fidler
-calculatingExploreData <-function(results) {
-  if(is.null(results$forCov)) {
-    waiter::waiter_show(html = tagList(
-      waiter::spin_seven_circle(), # A nice spinning loading indicator
-      h4("Calculating explore data...")
-    ))
-
-    # Evaluate the pipeline for results$forCov
-    results$forCov <- eval(str2lang(paste(c("results$parEstim", results$ParEstimates), collapse = "|>\n\t")))
-
-    waiter::waiter_hide()
-  }
-}
-
 
 
 #' The nlmixr2model function
@@ -233,17 +192,10 @@ nlmixr2model <- function() {
       } else if (tab == "Statistical Model") {
         calculatingInitialModel(results)
         calculatingParameterEstimate(results)
-        calculatingStatisticalModel(results)
         updateParEstimWithEsts(results)
-      } else if (tab == "Explore Data") {
-        calculatingInitialModel(results)
-        calculatingParameterEstimate(results)
-        calculatingStatisticalModel(results)
-        req(results$parEstim)
       } else if (tab == "Edit/Insert") {
         calculatingInitialModel(results)
         calculatingParameterEstimate(results)
-        calculatingStatisticalModel(results)
         updateParEstimWithEsts(results)
         req(results$parEstim)
       }

@@ -71,42 +71,80 @@ covServer <- function(id, results) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
-
-    # Reactive value to hold the updated matrix data from UI
-    updatedMatrixDF <- reactiveVal(NULL)
-
-    # Create a reactive expression to hold the initial matrix data
-    matrixDF <- reactive({
-      req(results$forCov)  # Ensure results$forCov is available
-      matrixData <- results$forCov$omega  # Access the omega matrix
-      as.data.frame(matrixData)  # Convert to data frame
-    })
+    fullMatrixDf <- reactiveVal(NULL)  # Reactive value to store the full covariance matrix
 
     # Dynamically add UI output if there are between subject variability
     output$omegaRows <- renderUI({
-      if (length(results$forCov$eta) == 0) {
-        list(h4("No between subject variability"))
-      } else {
-        list(
-          titlePanel("\u03a9"),
-          fluidRow(
-            column(
-              width = 12,
-              rhandsontable::rHandsontableOutput(ns("triangleTable")) # Covariance table below the button
-            )
-          )
-        )
+      req(results$parEstim)
+      if (is.null(fullMatrixDf())) {
+        .ome <- results$parEstim$omega
+        .pureMuRef <- vapply(results$parEstim$getSplitMuModel$pureMuRef,
+                             function(v) {
+                               nlmixr2lib::defaultCombine("eta", v)
+                             }, character(1),
+                             USE.NAMES = FALSE)
+        .pureMuRef <- setdiff(.pureMuRef, .ome)
+        if (length(.pureMuRef) > 0) {
+          .omeExtra <- eval(str2lang(
+            paste0("lotri::lotri(",
+                   paste(paste0(.pureMuRef, "~0.1"),
+                         collapse=","),
+                   ")")))
+          if (is.null(.ome)) {
+            .full <- .omeExtra
+          } else {
+            .full <- lotri::lotriMat(list(.ome,.omeExtra))
+          }
+        } else {
+          .full <- .ome
+        }
+        fullMatrixDf(as.data.frame(.full))
       }
+      .ome <- dimnames(results$parEstim$omega)[[1]]
+      .pureMuRef <- vapply(results$parEstim$getSplitMuModel$pureMuRef,
+                           function(v) {
+                             nlmixr2lib::defaultCombine("eta", v)
+                           }, character(1), USE.NAMES = FALSE)
+      .pureMuRef <- setdiff(.pureMuRef, .ome)
+      list(titlePanel("\u03a9"),
+           shinyWidgets::checkboxGroupButtons(
+             inputId = ns("betweenSubjectVaribility"),
+             label = "Between Subject Variability",
+             choices = c(.ome, .pureMuRef),
+             selected = .ome
+           ),
+           rhandsontable::rHandsontableOutput(ns("triangleTable")) # Covariance table below the button
+           )
     })
 
+    observeEvent(input$betweenSubjectVaribility, {
+      req(fullMatrixDf())
+      ## .bsv <- input$betweenSubjectVaribility
+      ## fullMatrixDf(df)
+    }, ignoreNULL = FALSE)
+
+    observeEvent(input$triangleTable, {
+      req(fullMatrixDf())
+      .bsv <- input$betweenSubjectVaribility
+      .updatedMatrix <- rhandsontable::hot_to_r(input$triangleTable)  # Capture changes from UI
+      .df <- fullMatrixDf()
+      if (length(.bsv) == 0) {
+        return(NULL)
+      }
+      .df[.bsv, .bsv] <- .updatedMatrix
+      fullMatrixDf(.df)  # Update the reactiveVal with the modified matrix
+    })
 
     # Render the rhandsontable (covariance matrix)
     output$triangleTable <- rhandsontable::renderRHandsontable({
-      df <- matrixDF()  # Access the reactive data frame
-
       # Set row names as column names for the table
-      colnames(df) <- rownames(df)
 
+      df <- fullMatrixDf()
+      .bsv <- input$betweenSubjectVaribility
+      if (length(.bsv) == 0) {
+        return(NULL)
+      }
+      df <- df[.bsv, .bsv, drop=FALSE]
       rhandsontable::rhandsontable(df) |>
         rhandsontable::hot_cols(renderer = "
           function (instance, td, row, col, prop, value, cellProperties) {
@@ -119,23 +157,24 @@ covServer <- function(id, results) {
           }")
     })
 
+
+
     output$resErrorEst <- rhandsontable::renderRHandsontable({
       data.frame("additive sd"="add.sd", "proportional sd"="prop.sd", check.names = FALSE,
                  row.names=c("var")) |>
         rhandsontable::rhandsontable()
       })
 
-    # Observe changes made to the rhandsontable and update the reactive value
+    # Observe changes made to the rhandsontable and update the
+    # reactive value
     observe({
       if (!is.null(input$triangleTable)) {
-        updatedMatrix <- rhandsontable::hot_to_r(input$triangleTable)  # Capture changes from UI
-        updatedMatrixDF(updatedMatrix)  # Update the reactiveVal with the modified matrix
+        ## updatedMatrix <- rhandsontable::hot_to_r(input$triangleTable)  # Capture changes from UI
+        ## updatedMatrixDF(updatedMatrix)  # Update the reactiveVal with the modified matrix
       }
     })
 
     # Store the expression in reactiveVals `results` to be used in other modules
-    observe({
-      req(updatedMatrixDF())  # Ensure the matrix has been updated
-    })
+
   })
 }
