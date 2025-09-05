@@ -128,15 +128,34 @@ solveODE <- function(input, output, session, results, id) {
   if (!is.numeric(ndoses)) ndoses <- 1
   if (is.na(ndoses)) ndoses <- 1
 
-
-  et <- rxode2::eventTable() |>
-    rxode2::add.sampling(seq(stime, etime, tstep)) %>%
-    rxode2::add.dosing(
-      dose = dose, start.time = start,
-      nbr.doses = ndoses, rate = rate,
-      dosing.interval = interval,
-      dosing.to = into)
-
+  if (length(results$parEstim$predDf$cmt) == 1) {
+    et <- rxode2::eventTable() |>
+      rxode2::add.sampling(seq(stime, etime, tstep)) |>
+      rxode2::add.dosing(
+        dose = dose, start.time = start,
+        nbr.doses = ndoses, rate = rate,
+        dosing.interval = interval,
+        dosing.to = into)
+  } else {
+    et <- rxode2::et()
+    et <- et |>
+      rxode2::add.dosing(
+        dose = dose, start.time = start,
+        nbr.doses = ndoses, rate = rate,
+        dosing.interval = interval,
+        dosing.to = into)
+    class(et) <- "data.frame"
+    et$cmt <- into
+    et <- do.call(`rbind`,
+            c(list(et),
+              lapply(results$parEstim$predDf$cmt,
+                     function(c) {
+                       et <- rxode2::et(seq(stime, etime, tstep))
+                       class(et) <- "data.frame"
+                       et$cmt <- c
+                       et
+                     })))
+  }
   results$rxsolve <-  rxode2::rxSolve(
     results$parEstim,
     et, nSub=nSub
@@ -391,7 +410,7 @@ ParEstServer <- function(id, results) {
           return(tabsetPanel())
         }
         vars <- colnames(results$rxsolve)
-        vars <- vars[!vars %in% c("time", "id", "sim.id", "evid", "cmt", "amt", "rate", "ii", "addl", "ss", "dur", "tad", "mdv", "resetno")]
+        vars <- vars[!tolower(vars) %in% c("time", "id", "sim.id", "evid", "cmt", "amt", "rate", "ii", "addl", "ss", "dur", "tad", "mdv", "resetno")]
         v1 <- results$parEstim$predDf$var[1]
         if (!(v1 %in% vars)) v1 <- vars[1]
         if (is.null(input$plotTabs)) {
