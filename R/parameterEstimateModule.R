@@ -12,6 +12,11 @@ updateParEstimWithEsts <- function(results) {
         is.null(results$paramNames)) {
     return()
   }
+  waiter::waiter_show(html = tagList(
+    waiter::spin_fading_circles(),  # A nice spinning loading indicator
+    h4("updating parameter estimates...")
+  ))
+  on.exit(waiter::waiter_hide(), add = TRUE)
   .iniDf <- results$parEstim$iniDf
   .est <- unlist(results$iniDf)
   if (isTRUE(results$backTransform)) {
@@ -88,12 +93,12 @@ ParEstUI <- function(id) {
 }
 
 solveODE <- function(input, output, session, results, id) {
+  updateParEstimWithEsts(results)
   waiter::waiter_show(html = tagList(
     waiter::spin_fading_circles(),  # A nice spinning loading indicator
     h4("solving system...")
   ))
-  updateParEstimWithEsts(results)
-
+  on.exit({waiter::waiter_hide()}, add=TRUE)
   ns <- NS(id)
   d1 <- rhandsontable::hot_to_r(input$dosingTable1)
   d2 <- rhandsontable::hot_to_r(input$dosingTable2)
@@ -160,7 +165,6 @@ solveODE <- function(input, output, session, results, id) {
     results$parEstim,
     et, nSub=nSub
   )
-  waiter::waiter_hide()
 }
 
 #'
