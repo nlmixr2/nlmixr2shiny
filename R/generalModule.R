@@ -258,3 +258,8 @@ nlmixr2model <- function() {
 
 
 }
+
+.dummy <- function() {
+  # This is a dummy function to import nlmixr2est explicitly
+  nlmixr2est::nlmixr()
+}
