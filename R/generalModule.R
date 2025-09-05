@@ -176,12 +176,12 @@ nlmixr2model <- function() {
       # Tab for Model Property
       tabPanel("Model Property", icon = icon("wrench"), pkprUI("modelProperty")),
 
+      # Tab for Statistical Model
+      tabPanel("Statistical Model", icon = icon("chart-bar"), covUI("covariancEstimate")) ,
+
       # Tab for Parameter Estimate
       tabPanel("Population Estimates", icon = icon("calculator"),
                ParEstUI("parameterEstimate")),
-
-      # Tab for Statistical Model
-      tabPanel("Statistical Model", icon = icon("chart-bar"), covUI("covariancEstimate")) ,
 
       # Tab for model
       tabPanel("Edit/Insert", icon = icon("file-pen"), aceUI("editModel"))

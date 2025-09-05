@@ -91,7 +91,16 @@ ParEstUI <- function(id) {
     )
   )
 }
-
+#' This solves the ODE of the current model
+#'
+#' @param input Shiny input
+#' @param output Shiny output
+#' @param session Shiny session
+#' @param results a list that is shared between the modules
+#' @param idmodule id
+#' @return nothing, called for side effects
+#' @noRd
+#' @author Matthew L. Fidler
 solveODE <- function(input, output, session, results, id) {
   updateParEstimWithEsts(results)
   waiter::waiter_show(html = tagList(
