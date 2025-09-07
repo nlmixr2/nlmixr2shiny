@@ -117,35 +117,17 @@ covServer <- function(id, results) {
            )
     })
 
-    observeEvent(input$betweenSubjectVaribility, {
-      req(fullMatrixDf())
-      ## .bsv <- input$betweenSubjectVaribility
-      ## fullMatrixDf(df)
-    }, ignoreNULL = FALSE)
-
-    observeEvent(input$triangleTable, {
-      req(fullMatrixDf())
-      .bsv <- input$betweenSubjectVaribility
-      .updatedMatrix <- rhandsontable::hot_to_r(input$triangleTable)  # Capture changes from UI
-      .df <- fullMatrixDf()
-      if (length(.bsv) == 0) {
-        return(NULL)
-      }
-      .df[.bsv, .bsv] <- .updatedMatrix
-      fullMatrixDf(.df)  # Update the reactiveVal with the modified matrix
-    })
-
     # Render the rhandsontable (covariance matrix)
     output$triangleTable <- rhandsontable::renderRHandsontable({
       # Set row names as column names for the table
-
-      df <- fullMatrixDf()
+      .df <- fullMatrixDf()
       .bsv <- input$betweenSubjectVaribility
+
       if (length(.bsv) == 0) {
         return(NULL)
       }
-      df <- df[.bsv, .bsv, drop=FALSE]
-      rhandsontable::rhandsontable(df) |>
+      .df <- .df[.bsv, .bsv, drop=FALSE]
+      rhandsontable::rhandsontable(.df) |>
         rhandsontable::hot_cols(renderer = "
           function (instance, td, row, col, prop, value, cellProperties) {
             Handsontable.renderers.TextRenderer.apply(this, arguments);
@@ -157,24 +139,12 @@ covServer <- function(id, results) {
           }")
     })
 
-
-
     output$resErrorEst <- rhandsontable::renderRHandsontable({
-      data.frame("additive sd"="add.sd", "proportional sd"="prop.sd", check.names = FALSE,
+      data.frame("additive sd"="add.sd",
+                 "proportional sd"="prop.sd",
+                 check.names = FALSE,
                  row.names=c("var")) |>
         rhandsontable::rhandsontable()
       })
-
-    # Observe changes made to the rhandsontable and update the
-    # reactive value
-    observe({
-      if (!is.null(input$triangleTable)) {
-        ## updatedMatrix <- rhandsontable::hot_to_r(input$triangleTable)  # Capture changes from UI
-        ## updatedMatrixDF(updatedMatrix)  # Update the reactiveVal with the modified matrix
-      }
     })
-
-    # Store the expression in reactiveVals `results` to be used in other modules
-
-  })
 }
