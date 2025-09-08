@@ -96,11 +96,10 @@ expServer <- function(id, results) {
           stop(paste("Dataset must include columns:", paste(requiredCols, collapse = ", ")))
         }
 
-        print(results$forCov$iniDf)
         # Render UI for parameter sliders
         output$parameterSliders <- renderUI({
-          req(results$forCov)
-          iniDf <- results$forCov$iniDf
+          req(results$parEstim)
+          iniDf <- results$parEstim$iniDf
 
           validate(need(nrow(iniDf) > 0, "Model contains no parameters."))
 
@@ -138,10 +137,10 @@ expServer <- function(id, results) {
         })
 
         observeEvent(input$updateModel, {
-          req(results$forCov)
+          req(results$parEstim)
           req(selectedData())
 
-          iniDf <- results$forCov$iniDf
+          iniDf <- results$parEstim$iniDf
 
           # Create a copy to modify
           newIni <- iniDf
@@ -155,15 +154,15 @@ expServer <- function(id, results) {
           }
 
           # Update the model parameters
-          rxode2::ini(results$forCov) <- newIni
+          rxode2::ini(results$parEstim) <- newIni
 
           # Rerun simulation
-          newSim <- rxode2::rxSolve(results$forCov, selectedData(), keep = "DV")
+          newSim <- rxode2::rxSolve(results$parEstim, selectedData(), keep = "DV")
           results$s <- newSim
         })
         # Solve the dataset
-        ## print(results$forCov)
-        s <- rxode2::rxSolve(results$forCov, dataset, keep = "DV")
+        ## print(results$parEstim)
+        s <- rxode2::rxSolve(results$parEstim, dataset, keep = "DV")
         # Store the results
         results$s <- s
         # Save dataset

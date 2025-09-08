@@ -1,4 +1,12 @@
 
+updateOmegaInModel <- function(results) {
+  if (is.null(results$parEstim) ||
+        is.null(results$betweenSubjectVaribility) ||
+        is.null(results$triangleTable)) {
+    return()
+  }
+}
+
 #Define the UI for the covariance module
 covUI <- function(id) {
   ns <- NS(id)
@@ -145,6 +153,11 @@ covServer <- function(id, results) {
                  check.names = FALSE,
                  row.names=c("var")) |>
         rhandsontable::rhandsontable()
-      })
     })
+
+    observeEvent(input$triangleTable, {
+      results$betweenSubjectVaribility <- results$initalEstimates
+      results$triangleTable <- rhandsontable::hot_to_r(input$triangleTable)
+    })
+  })
 }
