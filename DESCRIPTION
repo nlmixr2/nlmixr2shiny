@@ -21,6 +21,7 @@ Depends:
     nlmixr2lib
 Imports:
     rstudioapi,
+    xgxr,
     rxode2,
     nlmixr2est,
     shiny,

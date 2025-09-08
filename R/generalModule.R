@@ -97,6 +97,7 @@ calculatingParameterEstimate <-function(results) {
 #' @import shiny
 #' @import ggplot2
 #' @import nlmixr2lib
+#' @importFrom stats setNames
 #' @export
 nlmixr2model <- function() {
   ui <- fluidPage(

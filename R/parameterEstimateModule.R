@@ -176,15 +176,14 @@ solveODE <- function(input, output, session, results, id) {
   )
 }
 
-#'
+#' Parameter estimate server
 #'
 #'
 #' @param id
 #' @param results
 #' @return
-#' @export
+#' @noRd
 #' @author Matthew L. Fidler,  Zufar Mulyukov and Emmanuel Adewuyi
-#' @examples
 ParEstServer <- function(id, results) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
@@ -440,8 +439,9 @@ ParEstServer <- function(id, results) {
             output[[plotname0]] <- renderPlot({
               p <- try(eval(bquote(plot(results$rxsolve, .(str2lang(v))))))
               if (inherits(p,"try-error")) {
-                plot.new()
-                text(0.5, 0.5, paste("Error in plotting", v, ":", p))
+                ## plot.new()
+                ## text(0.5, 0.5, paste("Error in plotting", v, ":", p))
+                p <- NULL
               } else {
                 if (isTRUE(plotOptionsDf()$logy)) {
                   p <- p + xgxr::xgx_scale_y_log10()
