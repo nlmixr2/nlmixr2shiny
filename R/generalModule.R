@@ -6,17 +6,23 @@
 #'
 #' @noRd
 calculatingInitialModel <-function(results) {
+  .saved <- FALSE
   if (!is.null(results$ace)) {
     # Save model, but require an evaluation/parse
     if (results$ace != "") {
-      message("non empty ace")
       .env <- new.env(parent=globalenv())
       eval(str2lang(results$ace), envir = .env)
       .ls <- ls(.env)
       if (length(.ls) == 1L) {
-        message("evaluates to one model, save model")
         resetInitialModel(results)
-        results$pkpdm <- results$parEstim <- rxode2::rxode2(get(.ls, envir = .env))
+        .mod <- try(rxode2::rxode2(get(.ls, envir = .env)), silent=TRUE)
+        if (!inherits(.mod, "try-error")) {
+          .saved <- TRUE
+          results$pkpdm <- results$parEstim <- .mod
+        }
+      }
+      if (!.saved) {
+        showNotification("Error parsing model from editor. Please check the syntax.", type = "error")
       }
     }
     results$ace <- NULL
@@ -67,6 +73,8 @@ resetInitialModel <- function(results) {
   results$backTransform <- NULL
   results$modProp <- NULL
   results$parEstim <- NULL
+  results$triangleTable <- NULL
+  results$betweenSubjectVaribility <- NULL
 }
 
 #' Calculate the parameter estimates table
