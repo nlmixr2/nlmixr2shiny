@@ -8,9 +8,9 @@ Authors@R: c(
    person("Zufar", "Mulyukov", role="ctb", email="zufar.mulyukov@novartis.com"),
    person("Dyani", "Peterson", email="dyani1115@gmail.com", role="aut"))
 Description: A Shiny-based user interface for nlmixr2, allowing users to
-    build, visualize, and simulate pharmacokinetic and pharmacodynamic
+    build pharmacokinetic and pharmacodynamic
     (PK/PD) models interactively. This package simplifies model specification,
-    parameter estimation, and result visualization through a web-based
+    parameter estimation through a shiny
     interface. It integrates tools from nlmixr2, nlmixr2lib, and rxode2 with
     enhanced user interactivity using Shiny, shinyjs, and waiter for smooth
     UI experience.
