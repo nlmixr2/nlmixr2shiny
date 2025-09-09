@@ -84,42 +84,16 @@ covServer <- function(id, results) {
     # Dynamically add UI output if there are between subject variability
     output$omegaRows <- renderUI({
       req(results$parEstim)
-      if (is.null(fullMatrixDf())) {
-        .ome <- results$parEstim$omega
-        .pureMuRef <- vapply(results$parEstim$getSplitMuModel$pureMuRef,
-                             function(v) {
-                               nlmixr2lib::defaultCombine("eta", v)
-                             }, character(1),
-                             USE.NAMES = FALSE)
-        .pureMuRef <- setdiff(.pureMuRef, .ome)
-        if (length(.pureMuRef) > 0) {
-          .omeExtra <- eval(str2lang(
-            paste0("lotri::lotri(",
-                   paste(paste0(.pureMuRef, "~0.1"),
-                         collapse=","),
-                   ")")))
-          if (is.null(.ome)) {
-            .full <- .omeExtra
-          } else {
-            .full <- lotri::lotriMat(list(.ome,.omeExtra))
-          }
-        } else {
-          .full <- .ome
-        }
-        fullMatrixDf(as.data.frame(.full))
+      if (is.null(results$fullOmegaShiny)) {
+        results$fullOmegaShiny <-  as.data.frame(results$parEstim$fullOmegaShiny)
+        fullMatrixDf(results$fullOmegaShiny)
       }
-      .ome <- dimnames(results$parEstim$omega)[[1]]
-      .pureMuRef <- vapply(results$parEstim$getSplitMuModel$pureMuRef,
-                           function(v) {
-                             nlmixr2lib::defaultCombine("eta", v)
-                           }, character(1), USE.NAMES = FALSE)
-      .pureMuRef <- setdiff(.pureMuRef, .ome)
       list(titlePanel("\u03a9"),
            shinyWidgets::checkboxGroupButtons(
              inputId = ns("betweenSubjectVaribility"),
              label = "Between Subject Variability",
-             choices = c(.ome, .pureMuRef),
-             selected = .ome
+             choices = names(fullMatrixDf()),
+             selected = dimnames(results$parEstim$omega)[[1]]
            ),
            rhandsontable::rHandsontableOutput(ns("triangleTable")) # Covariance table below the button
            )
@@ -130,7 +104,10 @@ covServer <- function(id, results) {
       # Set row names as column names for the table
       .df <- fullMatrixDf()
       .bsv <- input$betweenSubjectVaribility
-
+      if (!all(.bsv %in% colnames(.df))) {
+        .bsv <- dimnames(results$parEstim$omega)[[1]]
+        output$betweenSubjectVaribility <- .bsv
+      }
       if (length(.bsv) == 0) {
         return(NULL)
       }

@@ -73,6 +73,7 @@ resetInitialModel <- function(results) {
   results$backTransform <- NULL
   results$modProp <- NULL
   results$parEstim <- NULL
+  results$fullOmegaShiny <- NULL
   results$triangleTable <- NULL
   results$betweenSubjectVaribility <- NULL
 }
