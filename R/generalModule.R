@@ -74,8 +74,6 @@ resetInitialModel <- function(results) {
   results$modProp <- NULL
   results$parEstim <- NULL
   results$fullOmegaShiny <- NULL
-  results$triangleTable <- NULL
-  results$betweenSubjectVaribility <- NULL
 }
 
 #' Calculate the parameter estimates table
@@ -189,22 +187,27 @@ nlmixr2model <- function() {
 
       if (tab == "PKPD Model") {
         resetInitialModel(results)
+        updateOmegaInModel(results)
         updateParEstimWithEsts(results)
       } else if (tab == "Model Property") {
         calculatingInitialModel(results)
+        updateOmegaInModel(results)
         updateParEstimWithEsts(results)
       } else if (tab == "Population Estimates") {
         calculatingInitialModel(results)
+        updateOmegaInModel(results)
         calculatingParameterEstimate(results)
         updateParEstimWithEsts(results)
         req(results$pkpdm)
       } else if (tab == "Statistical Model") {
         calculatingInitialModel(results)
+        updateOmegaInModel(results)
         calculatingParameterEstimate(results)
         updateParEstimWithEsts(results)
       } else if (tab == "Edit/Insert") {
         calculatingInitialModel(results)
         calculatingParameterEstimate(results)
+        updateOmegaInModel(results)
         updateParEstimWithEsts(results)
         req(results$parEstim)
       }

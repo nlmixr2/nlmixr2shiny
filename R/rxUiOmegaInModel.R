@@ -1,4 +1,4 @@
-rxUiGet.fullOmegaShiny <- function(x, ...) {
+rxUiGet.fullEtasShiny <- function(x, ...) {
   .ui <- x[[1]]
   .omega <- .ui$omega
   .ome <- dimnames(.omega)[[1]]
@@ -15,6 +15,27 @@ rxUiGet.fullOmegaShiny <- function(x, ...) {
   } else {
     .etas <- .getSplitMuModel$pureMuRef
   }
+  .etas
+}
+
+rxUiGet.fullEtaAddExpr <- function(x, ...) {
+  .etas <- rxUiGet.fullEtasShiny(x, ...)
+  if (length(.etas) == 0) {
+    .ret <- character(0)
+  } else {
+    .ret <- vapply(.etas,
+           function(v) {
+             nlmixr2lib::defaultCombine("eta", v)
+           }, character(1), USE.NAMES = FALSE)
+  }
+  setNames(paste0("results$parEstim <- nlmixr2lib::addEta(results$parEstim, ", .etas, ")"),
+           .ret)
+}
+
+rxUiGet.fullOmegaShiny <- function(x, ...) {
+  .etas <- rxUiGet.fullEtasShiny(x, ...)
+  .ui <- x[[1]]
+  .omega <- .ui$omega
   if (length(.etas) == 0) {
     .omega
   } else {
