@@ -12,7 +12,16 @@
 pkUI <- function(id) {
   ns <- NS(id)
   tagList(
-    uiOutput(ns("modelTypeSwitchUi")),
+    fluidRow(
+      column(3,
+             uiOutput(ns("modelTypeSwitchUi"))),
+      column(9,
+             ## shinyFiles::shinyFilesButton(ns("modelImport"), "Model Import",
+             ##                              title = "Please select a model to import:",
+             ##                              multiple = FALSE)
+             h4("")
+             )
+     ),
     uiOutput(ns("modelTypeUi"))
   )
 }
@@ -20,6 +29,12 @@ pkUI <- function(id) {
 pkServer <- function(id, results) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
+    ## shinyFiles::shinyFileChoose(input, ns("modelImport"),
+    ##                             roots = c(wd = "."),
+    ##                             ## filetypes = c("txt", "r", "R", "res", "lst",
+    ##                             ##               "nmlst", "nmctl", "ctl", "mlxtran",
+    ##                             ##               "xml"),
+    ##                             session = session)
     output$modelTypeSwitchUi <- renderUI({
       if (isTRUE(results$modelModified)) {
         shinyWidgets::radioGroupButtons(
@@ -32,7 +47,7 @@ pkServer <- function(id, results) {
         shinyWidgets::radioGroupButtons(
           inputId = ns("modelTypeSwitch"),
           label = NULL,
-          choices = c("Model Builder", "Model Library", "Model Import"),
+          choices = c("Model Builder", "Model Library"),
           selected = "Model Builder")
         results$modelModified <- FALSE
         results$pkpdm <- NULL
@@ -40,7 +55,7 @@ pkServer <- function(id, results) {
         shinyWidgets::radioGroupButtons(
           inputId = ns("modelTypeSwitch"),
           label = NULL,
-          choices = c("Model Builder", "Model Library", "Model Import"),
+          choices = c("Model Builder", "Model Library"),
           selected = "Model Builder")
       }
     })
@@ -125,8 +140,6 @@ pkServer <- function(id, results) {
             )
           )
         )
-      } else if (input$modelTypeSwitch == "Model Import") {
-        NULL
       } else if (input$modelTypeSwitch == "Current Model") {
         list(
           fluidRow(
