@@ -68,7 +68,7 @@ covServer <- function(id, results) {
         lapply(.nri, function(x) {
           fluidRow(
             column(
-              width = 2,
+              width = 3,
               rhandsontable::rHandsontableOutput(ns(paste0("resErrorEst_", x)),
                                                  width="100%")
             ),
@@ -127,7 +127,7 @@ covServer <- function(id, results) {
               )
             ),
             column(
-              width=4,
+              width=3,
               h3(" ")
             ))
         }))
@@ -197,7 +197,6 @@ covServer <- function(id, results) {
         tableId <- paste0("resErrorEst_", x)
         isolate({
           # Render the table with default data
-          print(.ri[[x]]$df)
           output[[tableId]] <- rhandsontable::renderRHandsontable({
             rhandsontable::rhandsontable(.ri[[x]]$df)
           })
@@ -209,6 +208,7 @@ covServer <- function(id, results) {
       .ri <- rinfo()
       .nri <- names(.ri)
       .nri <- .nri[.nri != "_modelPars"]
+      .single <- length(.nri) == 1
       lapply(.nri, function(x) {
         # Observe changes in the transform_ dropdown for each residual error model
         observeEvent(input[[paste0("transform_", x)]], {
@@ -235,10 +235,83 @@ covServer <- function(id, results) {
         })
         observeEvent(input[[paste0("resErrorModel_", x)]],{
           newRes <- input[[paste0("resErrorModel_", x)]]
-          if (.ri[[x]]$resErrorModel == newRes) {
+          curDist <- input[[paste0("distribution_", x)]]
+
+          if (curDist %in% c("Normal", "t-distribution", "Cauchy")) {
+            # These are OK
+            if (newRes == "") {
+              showModal(modalDialog(
+                title = "Invalid Residual Error Model",
+                paste0("For Normal, t-distribution, or Cauchy distributions, a residual error model must be selected"),
+                easyClose = TRUE,
+                footer = NULL
+              ))
+              updatePickerInput(session,
+                                inputId = paste0("resErrorModel_", x),
+                                selected = curDist)
+            } else {
+              .df <- rhandsontable::hot_to_r(input[[paste0("resErrorEst_", x)]])
+              .transform <- input[[paste0("transform_", x)]]
+              .cols <- switch(newRes,
+                              "Additive" = c("add"),
+                              "Proportional" = c("prop"),
+                              "Power" = c("pow", "exp"),
+                              "Additive + Proportional (Combined 1)" = c("add", "prop"),
+                              "Additive + Proportional (Combined 2)" = c("add", "prop"),
+                              "Additive + Proportional (Default)" = c("add", "prop"),
+                              "Additive + Power (Combined 1)" = c("add", "pow", "exp"),
+                              "Additive + Power (Combined 2)" = c("add", "pow", "exp"),
+                              "Additive + Power (Default)" = c("add", "pow", "exp"),
+                              character(0))
+
+              if (.transform %in% c("Logit-normal + Box-Cox",
+                                    "Logit-normal + Yeo-Johsnon",
+                                    "Probit-normal + Box-Cox",
+                                    "Probit-normal + Yeo-Johsnon")) {
+                .cols <- c(.cols, "lambda")
+              }
+              .dfNew <- lapply(.cols, function(n) {
+                if (n %in% colnames(.df)) {
+                  return(.df[[n]])
+                } else {
+                  .n <- ifelse(n == "exp", "c", n)
+                  if (.single) {
+                    return(nlmixr2lib::defaultCombine(.n,
+                                                      ifelse(n %in% c("add", "prop", "pow"), "sd", "")))
+                  } else {
+                    return(nlmixr2lib::defaultCombine(x, .n,
+                                                      ifelse(n %in% c("add", "prop", "pow"), "sd", "")))
+                  }
+                }
+              })
+              .dfNew <- as.data.frame(.dfNew)
+              names(.dfNew) <- .cols
+              rownames(.dfNew) <- x
+              .ri[[x]]$df <- .dfNew
+              rinfo(.ri)
+              ## print(.ri[[x]]$df)
+              ## tableId <- paste0("resErrorEst_", x)
+              ## isolate({
+              ##   # Render the table with default data
+              ##   output[[tableId]] <- rhandsontable::renderRHandsontable({
+              ##     rhandsontable::rhandsontable(.ri[[x]]$df)
+              ##   })
+              ## })
+            }
+          } else {
+            if (curDist != "" && newDist != "") {
+              showModal(modalDialog(
+                title = "Invalid Residual Error Model",
+                paste0("For likelihood models, a residual error can not be selected"),
+                easyClose = TRUE,
+                footer = NULL
+              ))
+              updatePickerInput(session,
+                                inputId = paste0("resErrorModel_", x),
+                                selected = "")
+            }
             return()
           }
-          message("Res for ", x, "changed to: ", newRes)
         })
       })
 
