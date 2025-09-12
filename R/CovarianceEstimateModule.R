@@ -44,11 +44,11 @@ covUI <- function(id) {
   )
 }
 
-getNewResidDfForEndpoint <- function(input, x, single) {
-  .newRes <- input[[paste0("resErrorModel_", x)]]
+getNewResidDfForEndpoint <- function(ri, input, x, single) {
+  .newRes <- ri[[x]]$resErrorModel
   .df <- rhandsontable::hot_to_r(input[[paste0("resErrorEst_", x)]])
-  .transform <- input[[paste0("transform_", x)]]
-  .dist <- input[[paste0("distribution_", x)]]
+  .transform <- ri[[x]]$transform
+  .dist <- ri[[x]]$distribution
 
   if (.dist %in% c("Normal", "t-distribution", "Cauchy")) {
     .cols <- switch(.newRes,
@@ -85,6 +85,24 @@ getNewResidDfForEndpoint <- function(input, x, single) {
         } else {
           return(nlmixr2lib::defaultCombine(x, .n,
                                             ifelse(n %in% c("add", "prop", "pow"), "sd", "")))
+        }
+      }
+    })
+    .dfNew <- as.data.frame(.dfNew)
+    names(.dfNew) <- .cols
+    rownames(.dfNew) <- x
+    .dfNew
+  } else {
+    .dist2 <- .toResidName(.dist)
+    .cols <- .residDistributionNames[[.dist2]]
+    .dfNew <- lapply(.cols, function(n) {
+      if (n %in% colnames(.df)) {
+        return(.df[[n]])
+      } else {
+        if (single) {
+          return(n)
+        } else {
+          return(nlmixr2lib::defaultCombine(x, n))
         }
       }
     })
@@ -270,43 +288,82 @@ covServer <- function(id, results) {
           if (.ri[[x]]$transform == newTransform) {
             return()
           }
-          .dfNew <- getNewResidDfForEndpoint(input, x, .single)
-          .ri[[x]]$df <- .dfNew
-          .ri[[x]]$transform <- newTransform
-          rinfo(.ri)
-          results$rinfo <- .ri
+          if (!(.ri[[x]]$distribution %in% c("Normal", "t-distribution", "Cauchy"))) {
+            shinyWidgets::updatePickerInput(session,
+                                            inputId = paste0("resErrorModel_", x),
+                                            selected = .ri[[x]]$resErrorModel)
+            shinyWidgets::updatePickerInput(session,
+                                            inputId = paste0("transform_", x),
+                                            selected = .ri[[x]]$transform)
+          } else {
+            .ri[[x]]$transform <- newTransform
+            .dfNew <- getNewResidDfForEndpoint(.ri, input, x, .single)
+            .ri[[x]]$df <- .dfNew
+            rinfo(.ri)
+            results$rinfo <- .ri
+
+          }
         })
         observeEvent(input[[paste0("distribution_", x)]], {
           newDist <- input[[paste0("distribution_", x)]]
           if (.ri[[x]]$distribution == newDist) {
             return()
           }
-          .dfNew <- getNewResidDfForEndpoint(input, x, .single)
-          .ri[[x]]$df <- .dfNew
+          if (.ri[[x]]$distribution %in% c("Normal", "t-distribution", "Cauchy") &&
+                !(newDist %in% c("Normal", "t-distribution", "Cauchy"))) {
+            .ri[[x]]$resErrorModel <- ""
+            .ri[[x]]$transform <- "Untransformed"
+            shinyWidgets::updatePickerInput(session,
+                                            inputId = paste0("resErrorModel_", x),
+                                            selected = .ri[[x]]$resErrorModel)
+            shinyWidgets::updatePickerInput(session,
+                                            inputId = paste0("transform_", x),
+                                            selected = .ri[[x]]$transform)
+          } else if (!(.ri[[x]]$distribution %in% c("Normal", "t-distribution", "Cauchy")) &&
+                       newDist %in% c("Normal", "t-distribution", "Cauchy")) {
+            .ri[[x]]$resErrorModel <- "Additive"
+            .ri[[x]]$transform <- "Untransformed"
+            shinyWidgets::updatePickerInput(session,
+                                            inputId = paste0("resErrorModel_", x),
+                                            selected = .ri[[x]]$resErrorModel)
+            shinyWidgets::updatePickerInput(session,
+                                            inputId = paste0("transform_", x),
+                                            selected = .ri[[x]]$transform)
+          }
+
           .ri[[x]]$distribution <- newDist
+          .dfNew <- getNewResidDfForEndpoint(.ri, input, x, .single)
+          .ri[[x]]$df <- .dfNew
           rinfo(.ri)
           results$rinfo <- .ri
         })
         observeEvent(input[[paste0("resErrorModel_", x)]],{
           newRes <- input[[paste0("resErrorModel_", x)]]
           curDist <- input[[paste0("distribution_", x)]]
-
-          if (curDist %in% c("Normal", "t-distribution", "Cauchy")) {
+          if (!(curDist %in% c("Normal", "t-distribution", "Cauchy"))) {
+            shinyWidgets::updatePickerInput(session,
+                                            inputId = paste0("resErrorModel_", x),
+                                            selected = .ri[[x]]$resErrorModel)
+            shinyWidgets::updatePickerInput(session,
+                                            inputId = paste0("transform_", x),
+                                            selected = .ri[[x]]$transform)
+          } else if (curDist %in% c("Normal", "t-distribution", "Cauchy") &&
+                .ri[[x]]$distribution %in% c("Normal", "t-distribution", "Cauchy")) {
             # These are OK
             if (newRes == "") {
               shinyWidgets::updatePickerInput(session,
                                               inputId = paste0("resErrorModel_", x),
                                               selected = .ri[[x]]$resErrorModel)
-              showModal(modalDialog(
-                title = "Invalid Residual Error Model",
-                paste0("For Normal, t-distribution, or Cauchy distributions, a residual error model must be selected"),
-                easyClose = TRUE,
-                footer = NULL
-              ))
+              ## showModal(modalDialog(
+              ##   title = "Invalid Residual Error Model",
+              ##   paste0("For Normal, t-distribution, or Cauchy distributions, a residual error model must be selected"),
+              ##   easyClose = TRUE,
+              ##   footer = NULL
+              ## ))
             } else {
-              .dfNew <- getNewResidDfForEndpoint(input, x, .single)
-              .ri[[x]]$df <- .dfNew
               .ri[[x]]$resErrorModel <- newRes
+              .dfNew <- getNewResidDfForEndpoint(.ri, input, x, .single)
+              .ri[[x]]$df <- .dfNew
               rinfo(.ri)
               results$rinfo <- .ri
             }

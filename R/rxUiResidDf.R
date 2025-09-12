@@ -41,7 +41,7 @@ residInfoObject <- function(x, line) {
                    "Power",
                    "Additive + Proportional",
                    "Additive + Power",
-                   NA_character_)
+                   "")
   if (.errType %in% 4:5) {
     .resid <- paste(.resid,
                     switch(as.integer(line$addProp),
@@ -59,9 +59,9 @@ residInfoObject <- function(x, line) {
          "Untransformed",
          "Log-normal",
          "Logit-normal",
-         "Logit-normal + Yeo-Johsnon",
+         "Logit-normal + Yeo-Johnson",
          "Probit-normal",
-         "Probit-normal + Yeo-Johsnon",
+         "Probit-normal + Yeo-Johnson",
          "Logit-normal + Box-Cox",
          "Probit-normal + Box-Cox")
 }
@@ -382,6 +382,30 @@ residInfo.dnorm <- residInfo.norm
     nbinom = c("size", "prob"),
     nbinomMu = c("size", "mu")
   )
+
+.toResidName <- function(dist) {
+  switch(dist,
+       "Normal"="norm",
+       "Poisson"="pois",
+       "Binomial"="binom",
+       "Beta"="beta",
+       "T"="t",
+       "Chi-Squared"="chisq",
+       "Exponential"="dexp",
+       "F"="f",
+       "Geometric"="geom",
+       "Hypergeometric"="hyper",
+       "Uniform"="unif",
+       "Weibull"="weibull",
+       "Cauchy"="cauchy",
+       "Gamma"="dgamma",
+       "Ordinal"="ord",
+       "Log-likelihood"="ll",
+       "Normal (AD)"="dnorm",
+       "Negative Binomial"="nbinom",
+       "Negative Binomial (mu)"="nbinomMu")
+}
+
 
 #' @rdname residInfo
 #' @export
