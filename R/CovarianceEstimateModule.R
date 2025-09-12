@@ -44,6 +44,57 @@ covUI <- function(id) {
   )
 }
 
+getNewResidDfForEndpoint <- function(input, x, single) {
+  .newRes <- input[[paste0("resErrorModel_", x)]]
+  .df <- rhandsontable::hot_to_r(input[[paste0("resErrorEst_", x)]])
+  .transform <- input[[paste0("transform_", x)]]
+  .dist <- input[[paste0("distribution_", x)]]
+
+  if (.dist %in% c("Normal", "t-distribution", "Cauchy")) {
+    .cols <- switch(.newRes,
+                    "Additive" = c("add"),
+                    "Proportional" = c("prop"),
+                    "Power" = c("pow", "exp"),
+                    "Additive + Proportional (Combined 1)" = c("add", "prop"),
+                    "Additive + Proportional (Combined 2)" = c("add", "prop"),
+                    "Additive + Proportional (Default)" = c("add", "prop"),
+                    "Additive + Power (Combined 1)" = c("add", "pow", "exp"),
+                    "Additive + Power (Combined 2)" = c("add", "pow", "exp"),
+                    "Additive + Power (Default)" = c("add", "pow", "exp"),
+                    character(0))
+
+    if (.transform %in% c("Box-Cox",
+                          "Yeo-Johnson",
+                          "Logit-normal + Box-Cox",
+                          "Logit-normal + Yeo-Johnson",
+                          "Probit-normal + Box-Cox",
+                          "Probit-normal + Yeo-Johnson")) {
+      .cols <- c(.cols, "lambda")
+    }
+    if (.dist == "t-distribution") {
+      .cols <- c(.cols, "df")
+    }
+    .dfNew <- lapply(.cols, function(n) {
+      if (n %in% colnames(.df)) {
+        return(.df[[n]])
+      } else {
+        .n <- ifelse(n == "exp", "c", n)
+        if (single) {
+          return(nlmixr2lib::defaultCombine(.n,
+                                            ifelse(n %in% c("add", "prop", "pow"), "sd", "")))
+        } else {
+          return(nlmixr2lib::defaultCombine(x, .n,
+                                            ifelse(n %in% c("add", "prop", "pow"), "sd", "")))
+        }
+      }
+    })
+    .dfNew <- as.data.frame(.dfNew)
+    names(.dfNew) <- .cols
+    rownames(.dfNew) <- x
+    .dfNew
+  }
+}
+
 # Define the Server logic for the covariance module
 covServer <- function(id, results) {
   moduleServer(id, function(input, output, session) {
@@ -61,6 +112,7 @@ covServer <- function(id, results) {
       }
       .ri <- residInfo(results$parEstim)
       rinfo(.ri)
+      results$rinfo <- .ri
       .nri <- names(.ri)
       .nri <- .nri[.nri != "_modelPars"]
 
@@ -102,11 +154,12 @@ covServer <- function(id, results) {
                             "Log-normal",
                             "Logit-normal",
                             "Box-Cox",
+                            "Yeo-Johnson",
                             "Logit-normal + Box-Cox",
-                            "Logit-normal + Yeo-Johsnon",
+                            "Logit-normal + Yeo-Johnson",
                             "Probit-normal",
                             "Probit-normal + Box-Cox",
-                            "Probit-normal + Yeo-Johsnon"),
+                            "Probit-normal + Yeo-Johnson"),
                 options = shinyWidgets::pickerOptions(container = "body"),
                 selected=.ri[[x]]$transform,
                 width = "100%"
@@ -217,21 +270,22 @@ covServer <- function(id, results) {
           if (.ri[[x]]$transform == newTransform) {
             return()
           }
-          message("Transformation for ", x, "changed to: ", newTransform)
+          .dfNew <- getNewResidDfForEndpoint(input, x, .single)
+          .ri[[x]]$df <- .dfNew
+          .ri[[x]]$transform <- newTransform
+          rinfo(.ri)
+          results$rinfo <- .ri
         })
         observeEvent(input[[paste0("distribution_", x)]], {
           newDist <- input[[paste0("distribution_", x)]]
           if (.ri[[x]]$distribution == newDist) {
             return()
           }
-          message("Distribution for ", x, "changed to: ", newDist)
-        })
-        observeEvent(input[[paste0("distribution_", x)]], {
-          newDist <- input[[paste0("distribution_", x)]]
-          if (.ri[[x]]$distribution == newDist) {
-            return()
-          }
-          message("Distribution for ", x, "changed to: ", newDist)
+          .dfNew <- getNewResidDfForEndpoint(input, x, .single)
+          .ri[[x]]$df <- .dfNew
+          .ri[[x]]$distribution <- newDist
+          rinfo(.ri)
+          results$rinfo <- .ri
         })
         observeEvent(input[[paste0("resErrorModel_", x)]],{
           newRes <- input[[paste0("resErrorModel_", x)]]
@@ -240,76 +294,24 @@ covServer <- function(id, results) {
           if (curDist %in% c("Normal", "t-distribution", "Cauchy")) {
             # These are OK
             if (newRes == "") {
+              shinyWidgets::updatePickerInput(session,
+                                              inputId = paste0("resErrorModel_", x),
+                                              selected = .ri[[x]]$resErrorModel)
               showModal(modalDialog(
                 title = "Invalid Residual Error Model",
                 paste0("For Normal, t-distribution, or Cauchy distributions, a residual error model must be selected"),
                 easyClose = TRUE,
                 footer = NULL
               ))
-              updatePickerInput(session,
-                                inputId = paste0("resErrorModel_", x),
-                                selected = curDist)
             } else {
-              .df <- rhandsontable::hot_to_r(input[[paste0("resErrorEst_", x)]])
-              .transform <- input[[paste0("transform_", x)]]
-              .cols <- switch(newRes,
-                              "Additive" = c("add"),
-                              "Proportional" = c("prop"),
-                              "Power" = c("pow", "exp"),
-                              "Additive + Proportional (Combined 1)" = c("add", "prop"),
-                              "Additive + Proportional (Combined 2)" = c("add", "prop"),
-                              "Additive + Proportional (Default)" = c("add", "prop"),
-                              "Additive + Power (Combined 1)" = c("add", "pow", "exp"),
-                              "Additive + Power (Combined 2)" = c("add", "pow", "exp"),
-                              "Additive + Power (Default)" = c("add", "pow", "exp"),
-                              character(0))
-
-              if (.transform %in% c("Logit-normal + Box-Cox",
-                                    "Logit-normal + Yeo-Johsnon",
-                                    "Probit-normal + Box-Cox",
-                                    "Probit-normal + Yeo-Johsnon")) {
-                .cols <- c(.cols, "lambda")
-              }
-              .dfNew <- lapply(.cols, function(n) {
-                if (n %in% colnames(.df)) {
-                  return(.df[[n]])
-                } else {
-                  .n <- ifelse(n == "exp", "c", n)
-                  if (.single) {
-                    return(nlmixr2lib::defaultCombine(.n,
-                                                      ifelse(n %in% c("add", "prop", "pow"), "sd", "")))
-                  } else {
-                    return(nlmixr2lib::defaultCombine(x, .n,
-                                                      ifelse(n %in% c("add", "prop", "pow"), "sd", "")))
-                  }
-                }
-              })
-              .dfNew <- as.data.frame(.dfNew)
-              names(.dfNew) <- .cols
-              rownames(.dfNew) <- x
+              .dfNew <- getNewResidDfForEndpoint(input, x, .single)
               .ri[[x]]$df <- .dfNew
+              .ri[[x]]$resErrorModel <- newRes
               rinfo(.ri)
-              ## print(.ri[[x]]$df)
-              ## tableId <- paste0("resErrorEst_", x)
-              ## isolate({
-              ##   # Render the table with default data
-              ##   output[[tableId]] <- rhandsontable::renderRHandsontable({
-              ##     rhandsontable::rhandsontable(.ri[[x]]$df)
-              ##   })
-              ## })
+              results$rinfo <- .ri
             }
           } else {
-            if (curDist != "" && newDist != "") {
-              showModal(modalDialog(
-                title = "Invalid Residual Error Model",
-                paste0("For likelihood models, a residual error can not be selected"),
-                easyClose = TRUE,
-                footer = NULL
-              ))
-              updatePickerInput(session,
-                                inputId = paste0("resErrorModel_", x),
-                                selected = "")
-            }
+            # Non normal, t and Cauchy distributions
             return()
           }
         })
