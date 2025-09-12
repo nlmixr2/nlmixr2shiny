@@ -51,6 +51,8 @@ covServer <- function(id, results) {
 
     fullMatrixDf <- reactiveVal(NULL)  # Reactive value to store the full covariance matrix
 
+    rinfo <- reactiveVal(NULL)
+
 
     output$resError <- renderUI({
       req(results$parEstim)
@@ -58,72 +60,77 @@ covServer <- function(id, results) {
         return(NULL)
       }
       .ri <- residInfo(results$parEstim)
+      rinfo(.ri)
       .nri <- names(.ri)
       .nri <- .nri[.nri != "_modelPars"]
 
       c(list(fluidRow(column(width=12, h4("Residual Errors")))),
         lapply(.nri, function(x) {
-        fluidRow(
-          column(
-            width = 2,
-            rhandsontable::rHandsontableOutput(ns(paste0("resErrorEst_", x)),
-                                               width="100%")
-          ),
-          column(
-            width=2,
-            shinyWidgets::pickerInput(
-              inputId = ns(paste0("resErrorModel_", x)),
-              label = "Residual Error Model",
-              choices = c("Additive",
-                          "Proportional",
-                          "Power",
-                          "Additive + Proportional (Combined 1)",
-                          "Additive + Proportional (Combined 2)",
-                          "Additive + Power (Combined 1)",
-                          "Additive + Power (Combined 2)"
-                          ),
-              selected=.ri[[x]]$resErrorModel,
-              options = shinyWidgets::pickerOptions(container = "body"),
-              width = "100%"
-            )
-          ),
-          column(
-            width=2,
-            shinyWidgets::pickerInput(
-              inputId = ns(paste0("transform_", x)),
-              label = "Transformation",
-              choices = c("Untransformed",
-                          "Log-normal",
-                          "Logit-normal",
-                          "Logit-normal + Box-Cox",
-                          "Logit-normal + Yeo-Johsnon",
-                          "Probit-normal",
-                          "Probit-normal + Box-Cox",
-                          "Probit-normal + Yeo-Johsnon"),
-              options = shinyWidgets::pickerOptions(container = "body"),
-              selected=.ri[[x]]$transform,
-              width = "100%"
-            )
-          ),
-          column(
-            width=2,
-            shinyWidgets::pickerInput(
-              inputId = ns(paste0("distribution_", x)),
-              label = "Distribution",
-              choices = c("Normal", "t-distribution", "Cauchy",
-                          "Poisson", "Binomial", "Beta", "Chi-Squared",
-                          "Geometric", "Uniform", "Weibull", "Negative Binomial",
-                          "Negative Binomial (mu)",
-                          "Generalized Log-Likelihood"),
-              options = shinyWidgets::pickerOptions(container = "body"),
-              width = "100%"
-            )
-          ),
-          column(
-            width=5,
-            h3(" ")
-          ))
-      }))
+          fluidRow(
+            column(
+              width = 2,
+              rhandsontable::rHandsontableOutput(ns(paste0("resErrorEst_", x)),
+                                                 width="100%")
+            ),
+            column(
+              width=2,
+              shinyWidgets::pickerInput(
+                inputId = ns(paste0("resErrorModel_", x)),
+                label = "Residual Error Model",
+                choices = c("",
+                            "Additive",
+                            "Proportional",
+                            "Power",
+                            "Additive + Proportional (Combined 1)",
+                            "Additive + Proportional (Combined 2)",
+                            "Additive + Proportional (Default)",
+                            "Additive + Power (Combined 1)",
+                            "Additive + Power (Combined 2)",
+                            "Additive + Power (Default)"
+                            ),
+                selected=.ri[[x]]$resErrorModel,
+                options = shinyWidgets::pickerOptions(container = "body"),
+                width = "100%"
+              )
+            ),
+            column(
+              width=2,
+              shinyWidgets::pickerInput(
+                inputId = ns(paste0("transform_", x)),
+                label = "Transformation",
+                choices = c("Untransformed",
+                            "Log-normal",
+                            "Logit-normal",
+                            "Box-Cox",
+                            "Logit-normal + Box-Cox",
+                            "Logit-normal + Yeo-Johsnon",
+                            "Probit-normal",
+                            "Probit-normal + Box-Cox",
+                            "Probit-normal + Yeo-Johsnon"),
+                options = shinyWidgets::pickerOptions(container = "body"),
+                selected=.ri[[x]]$transform,
+                width = "100%"
+              )
+            ),
+            column(
+              width=2,
+              shinyWidgets::pickerInput(
+                inputId = ns(paste0("distribution_", x)),
+                label = "Distribution",
+                choices = c("Normal", "t-distribution", "Cauchy",
+                            "Poisson", "Binomial", "Beta", "Chi-Squared",
+                            "Geometric", "Uniform", "Weibull", "Negative Binomial",
+                            "Negative Binomial (mu)",
+                            "Generalized Log-Likelihood"),
+                options = shinyWidgets::pickerOptions(container = "body"),
+                width = "100%"
+              )
+            ),
+            column(
+              width=4,
+              h3(" ")
+            ))
+        }))
     })
 
     # Dynamically add UI output if there are between subject variability
@@ -181,7 +188,8 @@ covServer <- function(id, results) {
 
     observe({
       req(results$parEstim)
-      .ri <- residInfo(results$parEstim)
+      req(rinfo())
+      .ri <- rinfo()
       .nri <- names(.ri)
       .nri <- .nri[.nri != "_modelPars"]
 
@@ -195,6 +203,46 @@ covServer <- function(id, results) {
           })
         })
       })
+    })
+    observe({
+      req(rinfo())  # Ensure endpointNames() is not NULL or empty
+      .ri <- rinfo()
+      .nri <- names(.ri)
+      .nri <- .nri[.nri != "_modelPars"]
+      lapply(.nri, function(x) {
+        # Observe changes in the transform_ dropdown for each residual error model
+        observeEvent(input[[paste0("transform_", x)]], {
+          # Action to perform when the transform_ dropdown changes
+          newTransform <- input[[paste0("transform_", x)]]
+          if (.ri[[x]]$transform == newTransform) {
+            return()
+          }
+          message("Transformation for ", x, "changed to: ", newTransform)
+        })
+        observeEvent(input[[paste0("distribution_", x)]], {
+          newDist <- input[[paste0("distribution_", x)]]
+          if (.ri[[x]]$distribution == newDist) {
+            return()
+          }
+          message("Distribution for ", x, "changed to: ", newDist)
+        })
+        observeEvent(input[[paste0("distribution_", x)]], {
+          newDist <- input[[paste0("distribution_", x)]]
+          if (.ri[[x]]$distribution == newDist) {
+            return()
+          }
+          message("Distribution for ", x, "changed to: ", newDist)
+        })
+        observeEvent(input[[paste0("resErrorModel_", x)]],{
+          newRes <- input[[paste0("resErrorModel_", x)]]
+          if (.ri[[x]]$resErrorModel == newRes) {
+            return()
+          }
+          message("Res for ", x, "changed to: ", newRes)
+        })
+      })
+
+
     })
 
   })
