@@ -160,11 +160,9 @@ covServer <- function(id, results) {
 
       lapply(.nri, function(x) {
         tableId <- paste0("resErrorEst_", x)
-        isolate({
-          # Render the table with default data
-          output[[tableId]] <- rhandsontable::renderRHandsontable({
-            rhandsontable::rhandsontable(.ri[[x]]$df)
-          })
+        # Render the table with default data
+        output[[tableId]] <- rhandsontable::renderRHandsontable({
+          rhandsontable::rhandsontable(.ri[[x]]$df)
         })
       })
     })
