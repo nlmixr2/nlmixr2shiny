@@ -63,6 +63,7 @@ updateResidInModel <- function(results) {
                        # lnorm(NA) + ...
                        .ret <- c(.ret, paste0(.add, "(NA)"))
                      } else if (!is.null(.df$add)) {
+                       if (.add == "") .add <- "add"
                        .ret <- c(.ret, paste0(.add, "(", .df$add, ")"))
                      }
                      if (!is.null(.df$prop)) {
@@ -99,7 +100,12 @@ updateResidInModel <- function(results) {
                  }, character(1), USE.NAMES=FALSE)
   # Now apply the residual model pipe
   for (p in .var) {
-    results$parEstim <- eval(bquote(rxode2::model(results$parEstim, .(str2lang(p)))))
+    tmp <- try(eval(bquote(rxode2::model(results$parEstim, .(str2lang(p))))), silent=TRUE)
+    if (inherits(tmp, "try-error")) {
+      warning("Error updating residual model for ", p, ": ", tmp)
+    } else {
+      results$parEstim <- tmp
+    }
   }
   results$pkpdm <- results$parEstim
   results$rinfo <- NULL
