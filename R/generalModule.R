@@ -189,26 +189,31 @@ nlmixr2model <- function() {
         resetInitialModel(results)
         updateOmegaInModel(results)
         updateParEstimWithEsts(results)
+        updateResidInModel(results)
       } else if (tab == "Model Property") {
         calculatingInitialModel(results)
         updateOmegaInModel(results)
         updateParEstimWithEsts(results)
+        updateResidInModel(results)
       } else if (tab == "Population Estimates") {
         calculatingInitialModel(results)
         updateOmegaInModel(results)
         calculatingParameterEstimate(results)
         updateParEstimWithEsts(results)
+        updateResidInModel(results)
         req(results$pkpdm)
       } else if (tab == "Statistical Model") {
         calculatingInitialModel(results)
         updateOmegaInModel(results)
         calculatingParameterEstimate(results)
         updateParEstimWithEsts(results)
+        updateResidInModel(results)
       } else if (tab == "Edit/Insert") {
         calculatingInitialModel(results)
         calculatingParameterEstimate(results)
         updateOmegaInModel(results)
         updateParEstimWithEsts(results)
+        updateResidInModel(results)
         req(results$parEstim)
       }
     })
