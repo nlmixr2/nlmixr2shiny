@@ -65,7 +65,7 @@ test_that("ordinal simulation", {
 
   expect_equal(residInfo(tmp),
                list(y = list(df = data.frame(line = "y ~ c(p0 = 0, p1 = 1, p2 = 2, p3 = 3, p4 = 4, p5 = 5, p6 = 6, p7 = 7, p8 = 8, p9 = 9, 10)", row.names = "y"),
-                             resErrorModel = NA_character_, transform = "Untransformed",
+                             resErrorModel = "", transform = "Untransformed",
                              distribution = "Ordinal"), `_modelPars` = NULL))
 
 })
@@ -96,7 +96,7 @@ test_that("log-likelihood", {
                                resErrorModel = "Additive", transform = "Untransformed",
                                distribution = "Normal"),
                     lik = list(df = data.frame(LL = "p2", row.names = "lik"),
-                               resErrorModel = NA_character_,
+                               resErrorModel = "",
                                transform = "Untransformed",
                                distribution = "Log-likelihood"),
                     `_modelPars` = NULL))
@@ -214,7 +214,7 @@ test_that("pois data frame", {
 
   expect_equal(residInfo(tmp),
                list(err = list(df = data.frame(lambda = "lambda", row.names = "err"),
-                               resErrorModel = NA_character_,
+                               resErrorModel = "",
                                transform = "Untransformed",
                                distribution = "Poisson"),
                     `_modelPars` = NULL))
@@ -241,7 +241,7 @@ test_that("binom simulations", {
   expect_equal(residInfo(tmp),
                list(err = list(df = data.frame(size = "n", prob = "p",
                                                row.names = "err"),
-                               resErrorModel = NA_character_, transform = "Untransformed",
+                               resErrorModel = "", transform = "Untransformed",
                                distribution = "Binomial"),
                     `_modelPars` = NULL))
 
@@ -268,7 +268,7 @@ test_that("beta simulations", {
   expect_equal(residInfo(tmp),
                list(err = list(df = data.frame(shape1 = "alpha", shape2 = "beta",
                                                row.names = "err"),
-                               resErrorModel = NA_character_, transform = "Untransformed",
+                               resErrorModel = "", transform = "Untransformed",
                                distribution = "Beta"),
                     `_modelPars` = NULL))
 })
@@ -290,7 +290,7 @@ test_that("chisq simulations", {
 
   expect_equal(residInfo(tmp),
                list(err=list(df=data.frame(df = "nu", row.names = "err"),
-                             resErrorModel = NA_character_, transform = "Untransformed",
+                             resErrorModel = "", transform = "Untransformed",
                              distribution = "Chi-Squared"),
                     `_modelPars` = NULL))
 
@@ -313,7 +313,7 @@ test_that("dexp simulations", {
 
   expect_equal(residInfo(tmp),
                list(err=list(df=data.frame(rate = "r", row.names = "err"),
-                             resErrorModel = NA_character_, transform = "Untransformed",
+                             resErrorModel = "", transform = "Untransformed",
                              distribution = "Exponential"),
                     `_modelPars` = NULL))
 
@@ -339,7 +339,7 @@ test_that("unif simulations", {
 
   expect_equal(residInfo(tmp),
                list(err=list(df=data.frame(min = "a", max = "b", row.names = "err"),
-                             resErrorModel = NA_character_, transform = "Untransformed",
+                             resErrorModel = "", transform = "Untransformed",
                              distribution = "Uniform"),
                     `_modelPars` = NULL))
 
@@ -365,7 +365,7 @@ test_that("rweibull simulations", {
 
   expect_equal(residInfo(tmp),
                list(err=list(df=data.frame(shape = "a", scale = "b", row.names = "err"),
-                             resErrorModel = NA_character_, transform = "Untransformed",
+                             resErrorModel = "", transform = "Untransformed",
                              distribution = "Weibull"),
                     `_modelPars` = NULL))
 
@@ -424,7 +424,7 @@ test_that("rgamma simulations", {
   expect_equal(residInfo(tmp),
                list(err=list(df=data.frame(shape = "a", scale = "b",
                                            row.names = "err"),
-                             resErrorModel = NA_character_, transform = "Untransformed",
+                             resErrorModel = "", transform = "Untransformed",
                              distribution = "Gamma"),
                     `_modelPars` = NULL))
 
@@ -447,7 +447,7 @@ test_that("rgeom simulations", {
 
   expect_equal(residInfo(tmp),
                list(err=list(df=data.frame(prob = "a", row.names = "err"),
-                             resErrorModel = NA_character_, transform = "Untransformed",
+                             resErrorModel = "", transform = "Untransformed",
                              distribution = "Geometric"),
                     `_modelPars` = NULL))
 
@@ -472,7 +472,7 @@ test_that("negative binomial simulation", {
 
   expect_equal(residInfo(tmp),
                list(err=list(df=data.frame(size = "n", prob = "p", row.names = "err"),
-                    resErrorModel = NA_character_, transform = "Untransformed",
+                    resErrorModel = "", transform = "Untransformed",
                     distribution = "Negative Binomial"),
                `_modelPars` = NULL))
 
@@ -497,7 +497,7 @@ test_that("negative binomial simulation", {
 
   expect_equal(residInfo(tmp),
                list(err=list(df=data.frame(size = "n", mu = "p", row.names = "err"),
-                             resErrorModel = NA_character_, transform = "Untransformed",
+                             resErrorModel = "", transform = "Untransformed",
                              distribution = "Negative Binomial (mu)"),
                     `_modelPars` = NULL))
 })

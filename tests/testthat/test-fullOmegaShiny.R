@@ -46,7 +46,6 @@ test_that("fullOmegaShiny", {
                lotri::lotri(eta.cl ~ 0.1,
                             eta.vc ~ 0.2))
 
-
   mod2 <- function () {
     ini({
       lcl <- 1

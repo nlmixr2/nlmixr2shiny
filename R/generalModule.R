@@ -106,7 +106,7 @@ calculatingParameterEstimate <-function(results) {
 #' @import nlmixr2lib
 #' @importFrom stats setNames
 #' @export
-nlmixr2model <- function() {
+nlmixr2model <- function(app=FALSE) {
   ui <- fluidPage(
     shinyjs::useShinyjs(),
     waiter::useWaiter(),
@@ -218,14 +218,16 @@ nlmixr2model <- function() {
       }
     })
   }
-
-  shiny::runGadget(ui, server, viewer = shiny::dialogViewer(
-    dialogName = "nlmixr2shiny",
-    width = 4500,
-    height = 3500
-  ))
-
-
+  if (app) {
+    shinyApp(
+      ui = ui,
+      server = server)
+  } else {
+    shiny::runGadget(ui, server, viewer = shiny::dialogViewer(
+      dialogName = "nlmixr2shiny",
+      width = 4500,
+      height = 3500))
+  }
 }
 
 .dummy <- function() {
