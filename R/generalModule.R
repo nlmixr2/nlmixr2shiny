@@ -131,7 +131,7 @@ nlmixr2model <- function(app=FALSE) {
     ")),
 
     # Navigation bar with the title and logo
-    navbarPage(
+    suppressWarnings(navbarPage(
       title = div(
         tags$img(src=paste0("data:image/png;base64,",xfun::base64_encode(system.file("logonlmixr.png", package = "nlmixr2shiny"))),height=40)
       ),
@@ -158,8 +158,7 @@ nlmixr2model <- function(app=FALSE) {
 
       # Additional tab for Simulation if needed
       # tabPanel("Simulation", icon = icon("play"), pksimUI("simulation"))
-    )
-  )
+    )))
 
   server <- function(input, output, session) {
     # Reactive values to store the intermediate results
