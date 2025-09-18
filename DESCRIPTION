@@ -23,7 +23,7 @@ Imports:
     rstudioapi,
     xgxr,
     rxode2,
-    nlmixr2est,
+    nlmixr2est (> 4.1.0),
     shiny,
     shinyjs,
     waiter,
