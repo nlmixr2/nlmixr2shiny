@@ -4,7 +4,7 @@
 \alias{nlmixr2model}
 \title{The nlmixr2model function}
 \usage{
-nlmixr2model()
+nlmixr2model(app = FALSE)
 }
 \value{
 A Shiny UI object.

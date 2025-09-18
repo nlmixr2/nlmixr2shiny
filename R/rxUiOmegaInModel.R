@@ -5,14 +5,15 @@ rxUiGet.fullEtasShiny <- function(x, ...) {
   .getSplitMuModel <- .ui$getSplitMuModel
   .pureMuRef <- .getSplitMuModel$pureMuRef
   .muRefDataFrame <- .ui$muRefDataFrame
+  .etas <- NULL
   if (length(.muRefDataFrame$theta) > 0) {
-    .w <- which(names(.getSplitMuModel$pureMuRef) %in% .muRefDataFrame$theta)
+    .w <- which(names(.getSplitMuModel$pureMuRef) %in%
+                  .muRefDataFrame$theta)
     if (length(.w) > 0) {
       .etas <- .getSplitMuModel$pureMuRef[-.w]
-    } else {
-      .etas <- .getSplitMuModel$pureMuRef
     }
-  } else {
+  }
+  if (is.null(.etas)) {
     .etas <- .getSplitMuModel$pureMuRef
   }
   .etas
@@ -21,7 +22,7 @@ rxUiGet.fullEtasShiny <- function(x, ...) {
 rxUiGet.fullEtaAddExpr <- function(x, ...) {
   .etas <- rxUiGet.fullEtasShiny(x, ...)
   if (length(.etas) == 0) {
-    .ret <- character(0)
+    return(character(0))
   } else {
     .ret <- vapply(.etas,
            function(v) {
