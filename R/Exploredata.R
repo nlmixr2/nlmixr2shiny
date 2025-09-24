@@ -96,11 +96,10 @@ expServer <- function(id, results) {
           stop(paste("Dataset must include columns:", paste(requiredCols, collapse = ", ")))
         }
 
-        print(results$forCov$iniDf)
         # Render UI for parameter sliders
         output$parameterSliders <- renderUI({
-          req(results$forCov)
-          iniDf <- results$forCov$iniDf
+          req(results$parEstim)
+          iniDf <- results$parEstim$iniDf
 
           validate(need(nrow(iniDf) > 0, "Model contains no parameters."))
 
@@ -138,10 +137,10 @@ expServer <- function(id, results) {
         })
 
         observeEvent(input$updateModel, {
-          req(results$forCov)
+          req(results$parEstim)
           req(selectedData())
 
-          iniDf <- results$forCov$iniDf
+          iniDf <- results$parEstim$iniDf
 
           # Create a copy to modify
           newIni <- iniDf
@@ -155,17 +154,17 @@ expServer <- function(id, results) {
           }
 
           # Update the model parameters
-          ini(results$forCov) <- newIni
+          rxode2::ini(results$parEstim) <- newIni
 
           # Rerun simulation
-          newSim <- rxSolve(results$forCov, selectedData(), keep = "DV")
+          newSim <- rxode2::rxSolve(results$parEstim, selectedData(), keep = "DV")
           results$s <- newSim
         })
         # Solve the dataset
-        print(results$forCov)
-        s = rxSolve(results$forCov, dataset, keep = "DV")
+        ## print(results$parEstim)
+        s <- rxode2::rxSolve(results$parEstim, dataset, keep = "DV")
         # Store the results
-        results$s = s
+        results$s <- s
         # Save dataset
         selectedData(dataset)
 
@@ -197,13 +196,15 @@ expServer <- function(id, results) {
 
     # Render the PK/PD plot
     output$dataPlot <- renderPlot({
+      time <- DV <- id <- ipredSim <- NULL
       req(results$s)
       print(results$s)
-      gg = ggplot(results$s, aes(x = time, y = DV)) +
-        geom_point() +
-        ggforce::facet_wrap_paginate(~id, ncol = 2, nrow = 2, page = input$page) +
-        geom_line(aes(x = time, y = ipredSim)) +
-        rxode2::rxTheme()
+      gg <- NULL
+      ## gg = ggplot(results$s, aes(x = time, y = DV)) +
+      ##   geom_point() +
+      ##   ggforce::facet_wrap_paginate(~id, ncol = 2, nrow = 2, page = input$page) +
+      ##   geom_line(aes(x = time, y = ipredSim)) +
+      ##   rxode2::rxTheme()
      # gg = ggplot(results$s, aes(x = time, y = ipredSim )) +
      #    geom_point(aes(x= time, y = DV), size = 3, alpha = 0.8) +
      #    geom_line() +

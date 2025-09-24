@@ -35,22 +35,22 @@ modelPropToFullProp <- function(prop) {
 #' @author Matthew L. Fidler
 modelPropIni <- function(cmtProp) {
   if (is.null(cmtProp)) {
-    data.frame(Compartment = character(0),
-               Property = character(0),
-               Remove = character(0),
+    data.frame("Compartment" = character(0),
+               "Property" = character(0),
+               "Remove" = character(0),
                stringsAsFactors = FALSE)
   } else {
-    data.frame(Compartment = cmtProp$Compartment,
-                      Property = modelPropToFullProp(cmtProp$Property),
-                      Remove = "Fixed",
-                      stringsAsFactors = FALSE)
+    data.frame("Compartment" = cmtProp$Compartment,
+               "Property" = modelPropToFullProp(cmtProp$Property),
+               "Remove" = "Fixed",
+               stringsAsFactors = FALSE)
   }
 }
 
 
 pipeAllProp <- function(df){
   checkmate::assertDataFrame(df)
-  df <- df[df$Property != "Fixed",, drop=FALSE ]
+  df <- df[df$Property != "Fixed",, drop=FALSE]
   if(nrow(df)==0){
     character(0)
   } else {
@@ -140,9 +140,8 @@ pkprServer <- function(id, results) {
 
       td <- rbind(table_data(),
                   modelPropIni(results$pkpdm$props$cmtProp)[,1:2])
-      if (nrow(subset(td,
-                      Compartment == new_row$Compartment &
-                        Property == new_row$Property)) > 0) {
+      if (nrow(td[td$Compartment == new_row$Compartment &
+                    td$Property == new_row$Property, ]) > 0) {
         showModal(modalDialog(
           title = "Error",
           "This Compartment-Property combination already exists.",
@@ -178,7 +177,10 @@ pkprServer <- function(id, results) {
         ))
         td <- td[-w,,drop=FALSE]
         if (nrow(td) == 0) {
-          td <- data.frame(Compartment = character(0), Property = character(0), Remove = character(0), stringsAsFactors = FALSE)
+          td <- data.frame("Compartment" = character(0),
+                           "Property" = character(0),
+                           "Remove" = character(0),
+                           stringsAsFactors = FALSE)
         }
       }
       DT::datatable(td, escape = FALSE, selection = 'none',

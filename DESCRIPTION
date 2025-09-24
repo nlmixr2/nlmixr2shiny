@@ -5,31 +5,38 @@ Version: 0.1.0
 Authors@R: c(
    person("Matthew L.","Fidler", role = c("aut", "cre"), email = "matthew.fidler@gmail.com", comment=c(ORCID="0000-0001-8538-6691")),
    person("Emmanuel Taiwo", "Adewuyi", role="aut", email="olex.taiwo@gmail.com"),
-   person("Dyani", "Peterson", email="dyani1115@gmail.com"))
+   person("Zufar", "Mulyukov", role="ctb", email="zufar.mulyukov@novartis.com"),
+   person("Dyani", "Peterson", email="dyani1115@gmail.com", role="aut"))
 Description: A Shiny-based user interface for nlmixr2, allowing users to
-    build, visualize, and simulate pharmacokinetic and pharmacodynamic
+    build pharmacokinetic and pharmacodynamic
     (PK/PD) models interactively. This package simplifies model specification,
-    parameter estimation, and result visualization through a web-based
+    parameter estimation through a shiny
     interface. It integrates tools from nlmixr2, nlmixr2lib, and rxode2 with
     enhanced user interactivity using Shiny, shinyjs, and waiter for smooth
     UI experience.
-License: GPL-3
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Depends:
-  nlmixr2lib
+    nlmixr2lib (> 0.3.0)
 Imports:
     rstudioapi,
-    nlmixr2,
+    xgxr,
     rxode2,
+    nlmixr2est (> 4.1.0),
     shiny,
-    shinydashboard,
     shinyjs,
     waiter,
     shinyWidgets,
     DT,
     rhandsontable,
-    miniUI,
     shinyAce,
-    clipr
-RoxygenNote: 7.3.2
+    clipr,
+    lotri,
+    ggplot2,
+    checkmate,
+    xfun,
+    qs
+RoxygenNote: 7.3.3
+Suggests:
+    testthat
