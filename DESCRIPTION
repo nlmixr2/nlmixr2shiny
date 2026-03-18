@@ -38,4 +38,4 @@ Imports:
     xfun
 RoxygenNote: 7.3.3
 Suggests:
-    testthat
+    testthat (>= 3.1.1)
