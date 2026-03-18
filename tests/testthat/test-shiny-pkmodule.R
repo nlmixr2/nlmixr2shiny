@@ -3,7 +3,6 @@ test_that("pkUI: renders without error", {
 })
 
 test_that(".pkmodlib: returns data frame with name and description", {
-  skip_if_not_installed("qs")
   result <- nlmixr2shiny:::.pkmodlib()
   expect_s3_class(result, "data.frame")
   expect_true("name" %in% names(result))
@@ -61,7 +60,6 @@ test_that("pkServer: observe updates results when Model Builder inputs set", {
 })
 
 test_that("pkServer: model library selection updates modlibInput", {
-  skip_if_not_installed("qs")
   results <- shiny::reactiveValues(
     pkpdm = NULL, pkpdpipe = NULL,
     modelTypeSwitch = "Model Library", modlibInput = NULL,

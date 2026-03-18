@@ -149,7 +149,9 @@ test_that("updateResidInModel: t-distribution", {
   ri <- residInfo(mod)
   results <- list2env(list(rinfo = ri, parEstim = mod), parent = emptyenv())
 
-  nlmixr2shiny:::updateResidInModel(results)
+  # dt() is not a valid residual distribution; updateResidInModel catches the
+  # parse error internally and emits a warning before clearing rinfo
+  suppressWarnings(nlmixr2shiny:::updateResidInModel(results))
 
   expect_null(results$rinfo)
 })

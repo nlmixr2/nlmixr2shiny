@@ -126,10 +126,10 @@ expServer <- function(id, results) {
             sliderInput(
               inputId = ns(paste0("slider_", row$name)),
               label = paste("Parameter:", row$name),
-              min = 0.9 * row$est,
-              max = 1.1 * row$est,
+              min = min(0.9 * row$est, 1.1 * row$est),
+              max = max(0.9 * row$est, 1.1 * row$est),
               value = row$est,
-              step = 0.01 * row$est
+              step = abs(0.01 * row$est)
             )
           })
 

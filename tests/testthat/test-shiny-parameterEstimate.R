@@ -257,7 +257,8 @@ test_that("ParEstServer: backTransform observer transforms estimates", {
   mod <- .make_pk_prop()
   .iniDf <- mod$iniDf
   .theta <- .iniDf[!is.na(.iniDf$ntheta), ]
-  .thetaDf <- as.data.frame(t(setNames(.theta$est, .theta$name)))
+  # Use exp-transformed values so backTransform=FALSE (log) and TRUE (exp) are inverses
+  .thetaDf <- as.data.frame(t(setNames(exp(.theta$est), .theta$name)))
 
   local_mocked_bindings(
     hot_to_r = function(x, ...) {
@@ -334,7 +335,8 @@ test_that("ParEstServer: goPlot triggers solveODE and sets rxsolve", {
   mod <- .make_pk_prop()
   .iniDf <- mod$iniDf
   .theta <- .iniDf[!is.na(.iniDf$ntheta), ]
-  .thetaDf <- as.data.frame(t(setNames(.theta$est, .theta$name)))
+  # Use exp-transformed values so parameter estimates are valid (positive) for ODE solving
+  .thetaDf <- as.data.frame(t(setNames(exp(.theta$est), .theta$name)))
 
   dosingDf1  <- data.frame(amt = 100, rate = NA_real_, cmt = "A1")
   dosingDf2  <- data.frame(start = 0, interval = NA_real_, ndoses = NA_real_)
