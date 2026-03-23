@@ -6,6 +6,10 @@
 \usage{
 nlmixr2model(app = FALSE)
 }
+\arguments{
+\item{app}{Should this be run as an app? If TRUE, it will run as a
+standard Shiny app. If FALSE, it will run as a Shiny gadget.}
+}
 \value{
 A Shiny UI object.
 }
