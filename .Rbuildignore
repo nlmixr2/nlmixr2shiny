@@ -1,4 +1,5 @@
 ^CLAUDE\.md$
+^.claude$
 ^LICENSE\.md$
 ^README\.Rmd$
 ^.*\.Rproj$

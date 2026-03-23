@@ -4,7 +4,7 @@
 
 .pkmodlib <- function()  {
   if(is.null(.modellib$modeldb)) {
-    .modellib$modeldb <- qs::qread(system.file("modeldb.qs", package="nlmixr2lib"))
+    .modellib$modeldb <- qs2::qs_read(system.file("modeldb.qs2", package="nlmixr2lib"))
   }
   .modellib$modeldb
 }

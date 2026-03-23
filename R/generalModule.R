@@ -104,9 +104,13 @@ calculatingParameterEstimate <-function(results) {
 #' @import shiny
 #' @import ggplot2
 #' @import nlmixr2lib
+#' @import nlmixr2data
 #' @importFrom stats setNames
 #' @export
+#' @param app Should this be run as an app? If TRUE, it will run as a
+#'   standard Shiny app. If FALSE, it will run as a Shiny gadget.
 nlmixr2model <- function(app=FALSE) {
+  checkmate::assertLogical(app, len = 1L, any.missing = FALSE)
   ui <- fluidPage(
     shinyjs::useShinyjs(),
     waiter::useWaiter(),
