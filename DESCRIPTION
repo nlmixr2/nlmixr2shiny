@@ -18,7 +18,8 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Depends:
-    nlmixr2lib (> 0.3.0)
+    nlmixr2lib (> 0.3.0),
+    nlmixr2data
 Imports:
     rstudioapi,
     xgxr,
