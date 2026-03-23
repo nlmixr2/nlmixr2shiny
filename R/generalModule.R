@@ -155,7 +155,10 @@ nlmixr2model <- function(app=FALSE) {
                ParEstUI("parameterEstimate")),
 
       # Tab for model
-      tabPanel("Edit/Insert", icon = icon("file-pen"), aceUI("editModel"))
+      tabPanel("Edit/Insert", icon = icon("file-pen"), aceUI("editModel")),
+
+      # Tab for importing NONMEM / Monolix models
+      tabPanel("Import Model", icon = icon("file-import"), importUI("importModel"))
 
       # Tab for Explore Data
       ## tabPanel("Explore Data", icon = icon("play"), expUI("exploreData"))
@@ -182,6 +185,7 @@ nlmixr2model <- function(app=FALSE) {
     covServer("covariancEstimate", results)
     #expServer("exploreData", results)
     aceServer("editModel", results)
+    importServer("importModel", results)
 
 
     # Monitor active tab and update results based on the selected tab
@@ -218,6 +222,8 @@ nlmixr2model <- function(app=FALSE) {
         updateParEstimWithEsts(results)
         updateResidInModel(results)
         req(results$parEstim)
+      } else if (tab == "Import Model") {
+        # Import tab manages its own state; no model recalculation needed
       }
     })
   }
