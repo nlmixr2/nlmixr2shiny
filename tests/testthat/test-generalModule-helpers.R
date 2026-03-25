@@ -227,12 +227,12 @@ test_that("calculatingParameterEstimate: applies modProp pipeline to pkpdm", {
   expect_false(is.null(results$parEstim))
 })
 
-test_that("nlmixr2model: app=TRUE returns a shinyApp object", {
-  app <- nlmixr2shiny::nlmixr2model(app = TRUE)
+test_that("nlmixr2shiny: app=TRUE returns a shinyApp object", {
+  app <- nlmixr2shiny::nlmixr2shiny(app = TRUE)
   expect_s3_class(app, "shiny.appobj")
 })
 
-test_that("nlmixr2model server: PKPD Model tab triggers reset functions", {
+test_that("nlmixr2shiny server: PKPD Model tab triggers reset functions", {
   local_mocked_bindings(
     waiter_show = function(...) invisible(),
     waiter_hide = function(...) invisible(),
@@ -243,14 +243,14 @@ test_that("nlmixr2model server: PKPD Model tab triggers reset functions", {
     .package = "rhandsontable"
   )
 
-  app <- nlmixr2shiny::nlmixr2model(app = TRUE)
+  app <- nlmixr2shiny::nlmixr2shiny(app = TRUE)
   shiny::testServer(app, {
     session$setInputs(mainTabs = "PKPD Model")
     expect_true(TRUE)
   })
 })
 
-test_that("nlmixr2model server: Model Property tab triggers calculatingInitialModel", {
+test_that("nlmixr2shiny server: Model Property tab triggers calculatingInitialModel", {
   local_mocked_bindings(
     waiter_show = function(...) invisible(),
     waiter_hide = function(...) invisible(),
@@ -266,14 +266,14 @@ test_that("nlmixr2model server: Model Property tab triggers calculatingInitialMo
     .package = "nlmixr2shiny"
   )
 
-  app <- nlmixr2shiny::nlmixr2model(app = TRUE)
+  app <- nlmixr2shiny::nlmixr2shiny(app = TRUE)
   shiny::testServer(app, {
     session$setInputs(mainTabs = "Model Property")
     expect_true(TRUE)
   })
 })
 
-test_that("nlmixr2model server: Statistical Model tab runs all helpers", {
+test_that("nlmixr2shiny server: Statistical Model tab runs all helpers", {
   local_mocked_bindings(
     waiter_show = function(...) invisible(),
     waiter_hide = function(...) invisible(),
@@ -289,14 +289,14 @@ test_that("nlmixr2model server: Statistical Model tab runs all helpers", {
     .package = "nlmixr2shiny"
   )
 
-  app <- nlmixr2shiny::nlmixr2model(app = TRUE)
+  app <- nlmixr2shiny::nlmixr2shiny(app = TRUE)
   shiny::testServer(app, {
     session$setInputs(mainTabs = "Statistical Model")
     expect_true(TRUE)
   })
 })
 
-test_that("nlmixr2model server: Population Estimates tab runs calculatingParameterEstimate", {
+test_that("nlmixr2shiny server: Population Estimates tab runs calculatingParameterEstimate", {
   local_mocked_bindings(
     waiter_show = function(...) invisible(),
     waiter_hide = function(...) invisible(),
@@ -312,14 +312,14 @@ test_that("nlmixr2model server: Population Estimates tab runs calculatingParamet
     .package = "nlmixr2shiny"
   )
 
-  app <- nlmixr2shiny::nlmixr2model(app = TRUE)
+  app <- nlmixr2shiny::nlmixr2shiny(app = TRUE)
   shiny::testServer(app, {
     session$setInputs(mainTabs = "Population Estimates")
     expect_true(TRUE)
   })
 })
 
-test_that("nlmixr2model server: Edit/Insert tab runs all helpers", {
+test_that("nlmixr2shiny server: Edit/Insert tab runs all helpers", {
   local_mocked_bindings(
     waiter_show = function(...) invisible(),
     waiter_hide = function(...) invisible(),
@@ -335,7 +335,7 @@ test_that("nlmixr2model server: Edit/Insert tab runs all helpers", {
     .package = "nlmixr2shiny"
   )
 
-  app <- nlmixr2shiny::nlmixr2model(app = TRUE)
+  app <- nlmixr2shiny::nlmixr2shiny(app = TRUE)
   shiny::testServer(app, {
     session$setInputs(mainTabs = "Edit/Insert")
     expect_true(TRUE)
