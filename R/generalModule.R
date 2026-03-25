@@ -142,7 +142,11 @@ nlmixr2model <- function(app=FALSE) {
       id = "mainTabs",
 
       # Tab for PKPD Model
-      tabPanel("PKPD Model", icon = icon("cogs"), pkUI("pkpdModel")),
+      tabPanel("PKPD Model", icon = icon("cogs"),
+               tabsetPanel(
+                 tabPanel("Model", pkUI("pkpdModel")),
+                 tabPanel("Import Model", icon = icon("file-import"), importUI("importModel"))
+               )),
 
       # Tab for Model Property
       tabPanel("Model Property", icon = icon("wrench"), pkprUI("modelProperty")),
@@ -155,10 +159,7 @@ nlmixr2model <- function(app=FALSE) {
                ParEstUI("parameterEstimate")),
 
       # Tab for model
-      tabPanel("Edit/Insert", icon = icon("file-pen"), aceUI("editModel")),
-
-      # Tab for importing NONMEM / Monolix models
-      tabPanel("Import Model", icon = icon("file-import"), importUI("importModel"))
+      tabPanel("Edit/Insert", icon = icon("file-pen"), aceUI("editModel"))
 
       # Tab for Explore Data
       ## tabPanel("Explore Data", icon = icon("play"), expUI("exploreData"))
