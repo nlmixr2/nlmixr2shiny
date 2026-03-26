@@ -169,13 +169,13 @@ campsismodToRxUi <- function(model) {
   mod_func <- eval(parse(text = func_text))
   rxui <- rxode2::rxode2(mod_func)
 
-  # -- 7. Attach sigma matrix as metadata --------------------------------------
+  # -- 7. Attach sigma matrix as metadata (attr is the only safe write path) --
   sigma_mat <- tryCatch(
     campsismod::rxodeMatrix(model, type = "sigma"),
     error = function(e) NULL
   )
   if (!is.null(sigma_mat) && nrow(sigma_mat) > 0L) {
-    rxui$mv0$sigma <- sigma_mat
+    attr(rxui, "sigma") <- sigma_mat
   }
 
   rxui
