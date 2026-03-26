@@ -76,10 +76,10 @@ test_that("campsismodToRxUi iniDf does NOT contain sigma/EPS parameter rows", {
   expect_false(any(sigma_param_names %in% idf$name))
 })
 
-test_that("campsismodToRxUi attaches sigma matrix as attr(rxui, 'sigma')", {
+test_that("campsismodToRxUi attaches sigma matrix as rxui$meta$sigma", {
   m <- campsismodGetModel("pk/1cpt_fo")
   rxui <- campsismodToRxUi(m)
-  sig <- attr(rxui, "sigma")
+  sig <- rxui$meta$sigma
   expect_true(!is.null(sig))
   expect_true(is.matrix(sig))
   expected_sigma <- campsismod::rxodeMatrix(m, type = "sigma")
@@ -89,7 +89,7 @@ test_that("campsismodToRxUi attaches sigma matrix as attr(rxui, 'sigma')", {
 test_that("sigma matrix values match campsismod::rxodeMatrix output", {
   m <- campsismodGetModel("pk/1cpt_fo")
   rxui <- campsismodToRxUi(m)
-  sig <- attr(rxui, "sigma")
+  sig <- rxui$meta$sigma
   # EPS_PROP_RUV has value 0.1 SD => variance 0.01 in the matrix
   expect_equal(sig["EPS_PROP_RUV", "EPS_PROP_RUV"], 0.01, tolerance = 1e-6)
 })
