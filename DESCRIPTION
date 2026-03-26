@@ -43,4 +43,5 @@ RoxygenNote: 7.3.3
 Suggests:
     testthat (>= 3.1.1),
     nonmem2rx,
-    monolix2rx
+    monolix2rx,
+    campsismod
