@@ -38,6 +38,7 @@ Imports:
     checkmate,
     xfun,
     qs2,
+    methods,
     shinyFiles
 RoxygenNote: 7.3.3
 Suggests:

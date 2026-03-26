@@ -16,7 +16,7 @@ importUI <- function(id) {
         )
       ),
       column(9,
-        # File chooser – shown for NONMEM and Monolix
+        # File chooser - shown for NONMEM and Monolix
         conditionalPanel(
           condition = sprintf("input['%s'] != 'campsismod'", ns("importType")),
           shinyFiles::shinyFilesButton(
@@ -26,7 +26,7 @@ importUI <- function(id) {
             multiple = FALSE
           )
         ),
-        # campsismod library picker – shown only for campsismod
+        # campsismod library picker - shown only for campsismod
         conditionalPanel(
           condition = sprintf("input['%s'] == 'campsismod'", ns("importType")),
           fluidRow(
@@ -206,7 +206,7 @@ importServer <- function(id, results) {
     output$importStatusUi <- renderUI({
       if (isTRUE(results$modelModified) && !is.null(results$pkpdm)) {
         tagList(
-          h4("Model imported — navigate to other tabs to inspect or estimate."),
+          h4("Model imported - navigate to other tabs to inspect or estimate."),
           verbatimTextOutput(ns("importedModelPrint"))
         )
       } else {
