@@ -11,16 +11,39 @@ importUI <- function(id) {
         shinyWidgets::radioGroupButtons(
           inputId = ns("importType"),
           label = "Source",
-          choices = c("NONMEM", "Monolix"),
+          choices = c("NONMEM", "Monolix", "campsismod"),
           selected = "NONMEM"
         )
       ),
       column(9,
-        shinyFiles::shinyFilesButton(
-          id = ns("importFile"),
-          label = "Select file",
-          title = "Select a model file to import",
-          multiple = FALSE
+        # File chooser – shown for NONMEM and Monolix
+        conditionalPanel(
+          condition = sprintf("input['%s'] != 'campsismod'", ns("importType")),
+          shinyFiles::shinyFilesButton(
+            id = ns("importFile"),
+            label = "Select file",
+            title = "Select a model file to import",
+            multiple = FALSE
+          )
+        ),
+        # campsismod library picker – shown only for campsismod
+        conditionalPanel(
+          condition = sprintf("input['%s'] == 'campsismod'", ns("importType")),
+          fluidRow(
+            column(4,
+              selectInput(ns("campsisCategory"), "Category",
+                choices = character(0), selectize = FALSE)
+            ),
+            column(5,
+              selectInput(ns("campsisModel"), "Model",
+                choices = character(0), selectize = FALSE)
+            ),
+            column(3,
+              br(),
+              actionButton(ns("campsisImport"), "Import",
+                icon = icon("file-import"), class = "btn-primary")
+            )
+          )
         )
       )
     ),
@@ -56,9 +79,29 @@ importServer <- function(id, results) {
       r
     })
 
+    # Populate campsismod category selector on load
+    observe({
+      cats <- if (requireNamespace("campsismod", quietly = TRUE)) {
+        campsismodCategories()
+      } else {
+        character(0)
+      }
+      updateSelectInput(session, "campsisCategory", choices = cats,
+                        selected = if (length(cats) > 0L) cats[1L] else NULL)
+    })
+
+    # Update model selector when category changes
+    observeEvent(input$campsisCategory, {
+      req(input$campsisCategory)
+      mods <- campsismodModelsInCategory(input$campsisCategory)
+      updateSelectInput(session, "campsisModel", choices = mods,
+                        selected = if (length(mods) > 0L) mods[1L] else NULL)
+    })
+
     # Register file chooser; filter extensions based on selected source type
     observe({
       req(input$importType)
+      if (input$importType == "campsismod") return()
       exts <- if (input$importType == "NONMEM") {
         c("ctl", "nmctl", "txt", "lst", "res", "nmlst")
       } else {
@@ -72,9 +115,10 @@ importServer <- function(id, results) {
       )
     })
 
-    # React to file selection
+    # React to file selection (NONMEM / Monolix)
     observeEvent(input$importFile, {
       req(!is.integer(input$importFile))  # integer means nothing selected yet
+      req(input$importType != "campsismod")
       paths <- shinyFiles::parseFilePaths(roots(), input$importFile)
       req(nrow(paths) > 0)
       path <- as.character(paths$datapath[[1]])
@@ -112,6 +156,48 @@ importServer <- function(id, results) {
         results$modelTypeSwitch <- "Current Model"
         showNotification(
           paste0(input$importType, " model imported successfully."),
+          type = "message", duration = 5
+        )
+      }
+    })
+
+    # React to campsismod Import button
+    observeEvent(input$campsisImport, {
+      req(input$campsisCategory, input$campsisModel)
+
+      if (!requireNamespace("campsismod", quietly = TRUE)) {
+        showNotification(
+          "Package 'campsismod' is required. Install it with: install.packages('campsismod')",
+          type = "error", duration = 10
+        )
+        return()
+      }
+
+      waiter::waiter_show(html = tagList(
+        waiter::spin_fading_circles(),
+        h4("Importing campsismod model...")
+      ))
+      on.exit(waiter::waiter_hide())
+
+      key <- paste0(input$campsisCategory, "/", input$campsisModel)
+      mod <- tryCatch({
+        campsis_mod <- campsismodGetModel(key)
+        campsismodToRxUi(campsis_mod)
+      }, error = function(e) {
+        showNotification(
+          paste("campsismod import failed:", conditionMessage(e)),
+          type = "error", duration = 10
+        )
+        NULL
+      })
+
+      if (!is.null(mod)) {
+        results$pkpdm <- mod
+        results$parEstim <- mod
+        results$modelModified <- TRUE
+        results$modelTypeSwitch <- "Current Model"
+        showNotification(
+          paste0("campsismod model '", key, "' imported successfully."),
           type = "message", duration = 5
         )
       }
