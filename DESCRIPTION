@@ -37,7 +37,12 @@ Imports:
     ggplot2,
     checkmate,
     xfun,
-    qs2
+    qs2,
+    methods,
+    shinyFiles
 RoxygenNote: 7.3.3
 Suggests:
-    testthat (>= 3.1.1)
+    testthat (>= 3.1.1),
+    nonmem2rx,
+    monolix2rx,
+    campsismod

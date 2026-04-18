@@ -95,7 +95,7 @@ calculatingParameterEstimate <-function(results) {
 }
 
 
-#' The nlmixr2model function
+#' The nlmixr2shiny function
 #'
 #'
 #' @description The main UI function for the nlmixr2Shiny app using Shiny (no miniUI).
@@ -109,7 +109,7 @@ calculatingParameterEstimate <-function(results) {
 #' @export
 #' @param app Should this be run as an app? If TRUE, it will run as a
 #'   standard Shiny app. If FALSE, it will run as a Shiny gadget.
-nlmixr2model <- function(app=FALSE) {
+nlmixr2shiny <- function(app=FALSE) {
   checkmate::assertLogical(app, len = 1L, any.missing = FALSE)
   ui <- fluidPage(
     shinyjs::useShinyjs(),
@@ -142,7 +142,11 @@ nlmixr2model <- function(app=FALSE) {
       id = "mainTabs",
 
       # Tab for PKPD Model
-      tabPanel("PKPD Model", icon = icon("cogs"), pkUI("pkpdModel")),
+      tabPanel("PKPD Model", icon = icon("cogs"),
+               tabsetPanel(
+                 tabPanel("Model", pkUI("pkpdModel")),
+                 tabPanel("Import Model", icon = icon("file-import"), importUI("importModel"))
+               )),
 
       # Tab for Model Property
       tabPanel("Model Property", icon = icon("wrench"), pkprUI("modelProperty")),
@@ -182,6 +186,7 @@ nlmixr2model <- function(app=FALSE) {
     covServer("covariancEstimate", results)
     #expServer("exploreData", results)
     aceServer("editModel", results)
+    importServer("importModel", results)
 
 
     # Monitor active tab and update results based on the selected tab
@@ -218,6 +223,8 @@ nlmixr2model <- function(app=FALSE) {
         updateParEstimWithEsts(results)
         updateResidInModel(results)
         req(results$parEstim)
+      } else if (tab == "Import Model") {
+        # Import tab manages its own state; no model recalculation needed
       }
     })
   }
