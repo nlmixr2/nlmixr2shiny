@@ -4,7 +4,9 @@
 
 .pkmodlib <- function()  {
   if(is.null(.modellib$modeldb)) {
-    .modellib$modeldb <- qs2::qs_read(system.file("modeldb.qs2", package="nlmixr2lib"))
+    # the exported dataset is the same object nlmixr2lib writes to its
+    # inst/ copy, so read it directly instead of a serialized file
+    .modellib$modeldb <- nlmixr2lib::modeldb
   }
   .modellib$modeldb
 }
