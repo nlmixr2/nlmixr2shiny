@@ -72,7 +72,7 @@ pkServer <- function(id, results) {
               column(3,
                      selectInput(ns("absorption_method"),
                                  "Absorption Method",
-                                 choices = c("IV/Infusion/Bolus", "First order", "Transit", "Weibull"), selectize = FALSE, size = 4),
+                                 choices = c("IV/Infusion/Bolus", "First Order", "Transit", "Weibull"), selectize = FALSE, size = 4),
                      conditionalPanel(
                        condition = paste0("input['", ns("absorption_method"), "'] == 'Transit'"),
                        sliderInput(ns("transit_compartment"),
@@ -258,6 +258,7 @@ pkServer <- function(id, results) {
         pd_values$baseline <- results$baseline
       } else if (results$response_type == "Indirect/Turnover") {
         pd_values$type_of_model <- results$type_of_model
+        pd_values$par_bas <- isTRUE(results$par_bas)
       }
       if (length(results$drug_action) == 1 && results$drug_action %in% c("Emax", "Imax")) {
         pd_values$sigmoidicity <- results$sigmoidicity
