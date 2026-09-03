@@ -72,7 +72,7 @@ residInfoObject <- function(x, line) {
          "Poisson",
          "Binomial",
          "Beta",
-         "T",
+         "t-distribution",
          "Chi-Squared",
          "Exponential",
          "F",
@@ -83,10 +83,22 @@ residInfoObject <- function(x, line) {
          "Cauchy",
          "Gamma",
          "Ordinal",
-         "Log-likelihood",
+         "Generalized Log-Likelihood",
          "Normal (AD)",
          "Negative Binomial",
          "Negative Binomial (mu)")
+}
+
+#' Endpoint names stored in a `residInfo()` list
+#'
+#' @param ri a list returned by [residInfo()]
+#' @return character vector of the endpoint (`var`) names, dropping the
+#'   `_modelPars` bookkeeping element
+#' @noRd
+#' @author Matthew L. Fidler
+.residEndpoints <- function(ri) {
+  .nri <- names(ri)
+  .nri[.nri != "_modelPars"]
 }
 
 #' @rdname residInfo
@@ -389,6 +401,7 @@ residInfo.dnorm <- residInfo.norm
        "Poisson"="pois",
        "Binomial"="binom",
        "Beta"="beta",
+       "t-distribution"="t",
        "T"="t",
        "Chi-Squared"="chisq",
        "Exponential"="dexp",
@@ -400,6 +413,7 @@ residInfo.dnorm <- residInfo.norm
        "Cauchy"="cauchy",
        "Gamma"="dgamma",
        "Ordinal"="ord",
+       "Generalized Log-Likelihood"="ll",
        "Log-likelihood"="ll",
        "Normal (AD)"="dnorm",
        "Negative Binomial"="nbinom",

@@ -106,3 +106,66 @@
   }
   rxode2::rxode2(f)
 }
+
+# PK/PD model with two endpoints (Cc, effect); the two-endpoint case is what
+# used to wedge the "Statistical Model" tab
+.make_pkpd_two_endpoints <- function() {
+  f <- function() {
+    ini({
+      tcl <- log(0.008)
+      tv <- log(0.6)
+      tec50 <- log(1)
+      eta.cl ~ 0.1
+      prop.err <- 0.2
+      effect.sd <- 0.1
+    })
+    model({
+      cl <- exp(tcl + eta.cl)
+      v <- exp(tv)
+      ec50 <- exp(tec50)
+      ke <- cl / v
+      d/dt(A1) = -ke * A1
+      Cc = A1 / v
+      effect <- Cc / (ec50 + Cc)
+      Cc ~ prop(prop.err)
+      effect ~ add(effect.sd)
+    })
+  }
+  rxode2::rxode2(f)
+}
+
+# error model the "Distribution" picker cannot represent
+.make_pk_gamma <- function() {
+  f <- function() {
+    ini({
+      tcl <- log(0.008)
+      tv <- log(0.6)
+      shape <- 1
+      scale <- 1
+    })
+    model({
+      cl <- exp(tcl)
+      v <- exp(tv)
+      d/dt(A1) = -(cl / v) * A1
+      cp = A1 / v
+      cp ~ dgamma(shape, scale)
+    })
+  }
+  rxode2::rxode2(f)
+}
+
+# error model with a distribution the picker does offer
+.make_pk_pois <- function() {
+  f <- function() {
+    ini({
+      tlam <- 1
+    })
+    model({
+      lam <- exp(tlam)
+      d/dt(A1) = -0.1 * A1
+      cp = A1 + lam
+      cp ~ pois(lam)
+    })
+  }
+  rxode2::rxode2(f)
+}

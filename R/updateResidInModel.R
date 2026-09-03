@@ -14,8 +14,7 @@ updateResidInModel <- function(results) {
   ))
   on.exit(waiter::waiter_hide(), add = TRUE)
   .ri <- results$rinfo
-  .nri <- names(.ri)
-  .nri <- .nri[.nri != "_modelPars"]
+  .nri <- .residEndpoints(.ri)
   .var <- vapply(.nri,
                  function(x) {
                    .resErrorModel <- .ri[[x]]$resErrorModel

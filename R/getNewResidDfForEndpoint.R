@@ -1,3 +1,29 @@
+#' Current residual parameter names for an endpoint
+#'
+#' Prefers what the user has typed into the `rhandsontable` for the endpoint,
+#' and falls back on the names already stored in `ri` when that table has not
+#' been rendered yet.  Without the fallback the names in the model (say
+#' `propSd`) would be silently replaced by freshly generated ones (`CcPropSd`)
+#' every time the residual pickers initialize, which both loses the model's
+#' parameter names and leaves the residual tables perpetually recalculating.
+#'
+#' @param ri residual info from the model
+#' @param input shiny input so the table can be read
+#' @param x the endpoint
+#' @return a `data.frame` of the current residual parameter names
+#' @noRd
+#' @author Matthew L. Fidler
+.residCurrentDf <- function(ri, input, x) {
+  .cur <- input[[paste0("resErrorEst_", x)]]
+  if (!is.null(.cur)) {
+    .hot <- try(rhandsontable::hot_to_r(.cur), silent = TRUE)
+    if (!inherits(.hot, "try-error") && is.data.frame(.hot) && ncol(.hot) > 0L) {
+      return(.hot)
+    }
+  }
+  ri[[x]]$df
+}
+
 #' Get the new residual error data frame for an endpoint
 #'
 #'
@@ -10,7 +36,7 @@
 #' @author Matthew L. Fidler
 getNewResidDfForEndpoint <- function(ri, input, x, single) {
   .newRes <- ri[[x]]$resErrorModel
-  .df <- rhandsontable::hot_to_r(input[[paste0("resErrorEst_", x)]])
+  .df <- .residCurrentDf(ri, input, x)
   .transform <- ri[[x]]$transform
   .dist <- ri[[x]]$distribution
 
