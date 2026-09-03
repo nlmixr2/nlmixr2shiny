@@ -159,10 +159,10 @@ nlmixr2shiny <- function(app=FALSE) {
                ParEstUI("parameterEstimate")),
 
       # Tab for model
-      tabPanel("Edit/Insert", icon = icon("file-pen"), aceUI("editModel"))
+      tabPanel("Edit/Insert", icon = icon("file-pen"), aceUI("editModel")),
 
       # Tab for Explore Data
-      ## tabPanel("Explore Data", icon = icon("play"), expUI("exploreData"))
+      tabPanel("Explore Data", icon = icon("play"), expUI("exploreData"))
 
       # Additional tab for Simulation if needed
       # tabPanel("Simulation", icon = icon("play"), pksimUI("simulation"))
@@ -184,7 +184,7 @@ nlmixr2shiny <- function(app=FALSE) {
     pkprServer("modelProperty", results)
     ParEstServer("parameterEstimate", results)
     covServer("covariancEstimate", results)
-    #expServer("exploreData", results)
+    expServer("exploreData", results)
     aceServer("editModel", results)
     importServer("importModel", results)
 
@@ -217,6 +217,13 @@ nlmixr2shiny <- function(app=FALSE) {
         updateParEstimWithEsts(results)
         updateResidInModel(results)
       } else if (tab == "Edit/Insert") {
+        calculatingInitialModel(results)
+        calculatingParameterEstimate(results)
+        updateOmegaInModel(results)
+        updateParEstimWithEsts(results)
+        updateResidInModel(results)
+        req(results$parEstim)
+      } else if (tab == "Explore Data") {
         calculatingInitialModel(results)
         calculatingParameterEstimate(results)
         updateOmegaInModel(results)

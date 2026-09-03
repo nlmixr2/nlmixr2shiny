@@ -35,6 +35,7 @@ Imports:
     clipr,
     lotri,
     ggplot2,
+    ggforce,
     checkmate,
     xfun,
     qs2,
