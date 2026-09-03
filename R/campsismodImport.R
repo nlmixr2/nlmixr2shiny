@@ -52,13 +52,13 @@ campsismodGetModel <- function(key) {
 # Internal helpers for building ini({}) block text
 # ---------------------------------------------------------------------------
 
-#' Build theta lines for the ini block from rxodeParams
+#' Build theta lines for the ini block from rxode_params
 #'
 #' @param model A `campsis_model` object.
 #' @return Character(1) – multi-line string of `  THETA_name <- value` entries.
 #' @noRd
 .campsismodThetaIni <- function(model) {
-  params <- campsismod::rxodeParams(model)
+  params <- campsismod::rxode_params(model)
   if (length(params) == 0L) return("")
   lines <- vapply(names(params), function(nm) {
     sprintf("    %s <- %g", nm, params[[nm]])
@@ -66,7 +66,7 @@ campsismodGetModel <- function(key) {
   paste(lines, collapse = "\n")
 }
 
-#' Build omega lines for the ini block from rxodeMatrix("omega")
+#' Build omega lines for the ini block from rxode_matrix("omega")
 #'
 #' Diagonal matrices produce individual `eta ~ var` entries; full matrices
 #' produce a single `eta1 + eta2 + ... ~ c(lower_triangle)` entry.
@@ -75,7 +75,7 @@ campsismodGetModel <- function(key) {
 #' @return Character(1) – multi-line ini-block omega text, or `""` if no omegas.
 #' @noRd
 .campsismodOmegaIni <- function(model) {
-  omega <- campsismod::rxodeMatrix(model, type = "omega")
+  omega <- campsismod::rxode_matrix(model, type = "omega")
   n <- nrow(omega)
   if (n == 0L) return("")
   nms <- rownames(omega)
@@ -110,9 +110,9 @@ campsismodGetModel <- function(key) {
 #'
 #' Builds an nlmixr2/rxode2-compatible model from:
 #' \itemize{
-#'   \item `campsismod::rxodeCode()` for the model block (error lines stripped)
-#'   \item `campsismod::rxodeParams()` for theta initial estimates
-#'   \item `campsismod::rxodeMatrix(type = "omega")` for the omega block
+#'   \item `campsismod::rxode_code()` for the model block (error lines stripped)
+#'   \item `campsismod::rxode_params()` for theta initial estimates
+#'   \item `campsismod::rxode_matrix(type = "omega")` for the omega block
 #' }
 #' The sigma matrix is stored as `rxui$mv0$sigma` (metadata) and is intentionally
 #' excluded from `iniDf` so the user can configure the residual error model
@@ -125,7 +125,7 @@ campsismodGetModel <- function(key) {
 #' @noRd
 campsismodToRxUi <- function(model) {
   # -- 1. Code lines -----------------------------------------------------------
-  code_lines <- campsismod::rxodeCode(model)
+  code_lines <- campsismod::rxode_code(model)
 
   # -- 2. Identify sigma EPS variable names ------------------------------------
   all_params <- model@parameters@list
@@ -171,7 +171,7 @@ campsismodToRxUi <- function(model) {
 
   # -- 7. Attach sigma matrix into rxui$meta (the designated metadata env) ----
   sigma_mat <- tryCatch(
-    campsismod::rxodeMatrix(model, type = "sigma"),
+    campsismod::rxode_matrix(model, type = "sigma"),
     error = function(e) NULL
   )
   if (!is.null(sigma_mat) && nrow(sigma_mat) > 0L) {

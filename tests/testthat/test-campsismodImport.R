@@ -71,7 +71,7 @@ test_that("campsismodToRxUi iniDf does NOT contain sigma/EPS parameter rows", {
   rxui <- campsismodToRxUi(m)
   idf <- rxui$iniDf
   # Sigma matrix for this model has EPS_PROP_RUV; it must not appear in iniDf
-  sigma_mat <- campsismod::rxodeMatrix(m, type = "sigma")
+  sigma_mat <- campsismod::rxode_matrix(m, type = "sigma")
   sigma_param_names <- paste0("EPS_", rownames(sigma_mat))
   expect_false(any(sigma_param_names %in% idf$name))
 })
@@ -82,11 +82,11 @@ test_that("campsismodToRxUi attaches sigma matrix as rxui$meta$sigma", {
   sig <- rxui$meta$sigma
   expect_true(!is.null(sig))
   expect_true(is.matrix(sig))
-  expected_sigma <- campsismod::rxodeMatrix(m, type = "sigma")
+  expected_sigma <- campsismod::rxode_matrix(m, type = "sigma")
   expect_equal(sig, expected_sigma)
 })
 
-test_that("sigma matrix values match campsismod::rxodeMatrix output", {
+test_that("sigma matrix values match campsismod::rxode_matrix output", {
   m <- campsismodGetModel("pk/1cpt_fo")
   rxui <- campsismodToRxUi(m)
   sig <- rxui$meta$sigma
@@ -98,11 +98,11 @@ test_that("sigma matrix values match campsismod::rxodeMatrix output", {
 # campsismodToRxUi: theta initial estimates
 # ---------------------------------------------------------------------------
 
-test_that("campsismodToRxUi theta estimates match rxodeParams values", {
+test_that("campsismodToRxUi theta estimates match rxode_params values", {
   m <- campsismodGetModel("pk/1cpt_fo")
   rxui <- campsismodToRxUi(m)
   idf <- rxui$iniDf
-  params <- campsismod::rxodeParams(m)
+  params <- campsismod::rxode_params(m)
   for (nm in names(params)) {
     row <- idf[idf$name == nm, , drop = FALSE]
     expect_equal(nrow(row), 1L, info = paste("theta", nm, "should have one row in iniDf"))
@@ -115,11 +115,11 @@ test_that("campsismodToRxUi theta estimates match rxodeParams values", {
 # campsismodToRxUi: omega initial estimates
 # ---------------------------------------------------------------------------
 
-test_that("campsismodToRxUi omega diagonal estimates match rxodeMatrix values", {
+test_that("campsismodToRxUi omega diagonal estimates match rxode_matrix values", {
   m <- campsismodGetModel("pk/1cpt_fo")
   rxui <- campsismodToRxUi(m)
   idf <- rxui$iniDf
-  omega <- campsismod::rxodeMatrix(m, type = "omega")
+  omega <- campsismod::rxode_matrix(m, type = "omega")
   for (nm in rownames(omega)) {
     row <- idf[idf$name == nm, , drop = FALSE]
     expect_equal(nrow(row), 1L, info = paste("eta", nm, "should appear in iniDf"))
