@@ -29,7 +29,14 @@ rxUiGet.fullEtaAddExpr <- function(x, ...) {
              nlmixr2lib::defaultCombine("eta", v)
            }, character(1), USE.NAMES = FALSE)
   }
-  setNames(paste0("results$parEstim <- nlmixr2lib::addEta(results$parEstim, ", .etas, ")"),
+  # Quote the parameter name as a string literal rather than splicing it in as
+  # a bare symbol: `addEta()` accepts either, but a bare symbol is looked up
+  # in the caller's scope before falling back to being treated as a name, so
+  # a parameter that happens to share a name with any function visible there
+  # (e.g. `alpha`, re-exported from scales via `import(ggplot2)`) resolves to
+  # that function instead and fails `addEta()`'s numeric assertion.
+  .q <- vapply(.etas, deparse1, character(1), USE.NAMES = FALSE)
+  setNames(paste0("results$parEstim <- nlmixr2lib::addEta(results$parEstim, ", .q, ")"),
            .ret)
 }
 

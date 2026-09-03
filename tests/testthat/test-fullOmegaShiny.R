@@ -147,7 +147,47 @@ test_that("$fullEtaAddExpr", {
   tmp <- rxode2::rxode2(f)
 
   expect_equal(tmp$fullEtaAddExpr,
-               c(etaCl = "results$parEstim <- nlmixr2lib::addEta(results$parEstim, cl)",
-                 etaV = "results$parEstim <- nlmixr2lib::addEta(results$parEstim, v)"))
+               c(etaCl = "results$parEstim <- nlmixr2lib::addEta(results$parEstim, \"cl\")",
+                 etaV = "results$parEstim <- nlmixr2lib::addEta(results$parEstim, \"v\")"))
 
+})
+
+test_that("$fullEtaAddExpr quotes parameter names that shadow visible functions", {
+  # `alpha` is exported by scales and re-exported through ggplot2, which
+  # nlmixr2shiny imports wholesale; a bare (unquoted) `alpha` in the
+  # generated call would resolve to that function instead of being treated
+  # as the parameter name, and addEta() would then fail its numeric
+  # assertion on a closure. See updateOmegaInModel().
+  f <- function() {
+    ini({
+      lalpha <- 1
+      lv <- log(0.6)
+      add.err <- 0.1
+    })
+    model({
+      alpha <- exp(lalpha)
+      v <- exp(lv)
+      d/dt(A1) = -alpha * A1
+      cp = A1 / v
+      cp ~ add(add.err)
+    })
+  }
+
+  tmp <- rxode2::rxode2(f)
+
+  expect_equal(tmp$fullEtaAddExpr,
+               c(etaAlpha = "results$parEstim <- nlmixr2lib::addEta(results$parEstim, \"alpha\")",
+                 etaV = "results$parEstim <- nlmixr2lib::addEta(results$parEstim, \"v\")"))
+
+  # the generated expression must actually be safe to eval(), not merely look
+  # quoted: bind a same-named function in the calling scope the way
+  # `ggplot2::alpha` is visible from nlmixr2shiny's namespace, and confirm the
+  # eta is still added rather than raising the closure-typed assertion error.
+  alpha <- function(colour, alpha = NA) colour
+  results <- new.env()
+  results$parEstim <- tmp
+  for (expr in tmp$fullEtaAddExpr) {
+    eval(str2lang(expr))
+  }
+  expect_true(all(c("etaAlpha", "etaV") %in% dimnames(results$parEstim$omega)[[1]]))
 })
