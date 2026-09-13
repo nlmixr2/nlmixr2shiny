@@ -8,6 +8,8 @@ test_that(".pkmodlib: returns data frame with name and description", {
   expect_true("name" %in% names(result))
   expect_true("description" %in% names(result))
   expect_true(nrow(result) > 0)
+  expect_identical(result, nlmixr2lib::modeldb)
+  expect_identical(nlmixr2shiny:::.pkmodlib(), result)
 })
 
 test_that("pkServer: initializes without error", {
