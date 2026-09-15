@@ -325,3 +325,47 @@ test_that("getNewResidDfForEndpoint: rownames set to endpoint name", {
   result <- nlmixr2shiny:::getNewResidDfForEndpoint(ri, input, "cp", TRUE)
   expect_equal(rownames(result), "cp")
 })
+
+test_that(".residCurrentDf falls back to the stored names when the table is not rendered", {
+  # The `resErrorEst_` handsontable is rendered after the pickers are created,
+  # so the picker observers run at least once while `input$resErrorEst_<x>` is
+  # still NULL.  When that happened the model's parameter names were thrown
+  # away and replaced by freshly generated ones, which both lost the names and
+  # left the residual tables perpetually recalculating.
+  ri <- .make_ri("Cc", "Proportional", "Untransformed", "Normal",
+                 data.frame(prop = "propSd", row.names = "Cc"))
+
+  expect_equal(nlmixr2shiny:::.residCurrentDf(ri, list(), "Cc"),
+               data.frame(prop = "propSd", row.names = "Cc"))
+
+  # multi-endpoint models are the ones that used to break, so check that the
+  # regenerated names are not substituted there either
+  res <- nlmixr2shiny:::getNewResidDfForEndpoint(ri, list(), "Cc", FALSE)
+  expect_equal(res$prop, "propSd")
+})
+
+test_that(".residCurrentDf prefers the rendered table over the stored names", {
+  local_mocked_bindings(
+    hot_to_r = function(x, ...) x,
+    .package = "rhandsontable"
+  )
+  ri <- .make_ri("Cc", "Proportional", "Untransformed", "Normal",
+                 data.frame(prop = "propSd", row.names = "Cc"))
+  input <- .make_input("Cc", data.frame(prop = "myPropSd", row.names = "Cc"))
+
+  expect_equal(nlmixr2shiny:::.residCurrentDf(ri, input, "Cc")$prop, "myPropSd")
+  expect_equal(nlmixr2shiny:::getNewResidDfForEndpoint(ri, input, "Cc", FALSE)$prop,
+               "myPropSd")
+})
+
+test_that(".residCurrentDf ignores an unreadable table", {
+  local_mocked_bindings(
+    hot_to_r = function(x, ...) stop("not a handsontable"),
+    .package = "rhandsontable"
+  )
+  ri <- .make_ri("Cc", "Proportional", "Untransformed", "Normal",
+                 data.frame(prop = "propSd", row.names = "Cc"))
+  input <- .make_input("Cc", "garbage")
+
+  expect_equal(nlmixr2shiny:::.residCurrentDf(ri, input, "Cc")$prop, "propSd")
+})

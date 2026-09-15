@@ -28,6 +28,38 @@ getDataForExploration <- function(dataset_name) {
   }
 }
 
+#' Compute a safe (min, max, step) triple for an iniDf row's slider
+#'
+#' Falls back to a rule-based range when the model's own lower/upper are
+#' missing or infinite, and always widens the range to include `est` and
+#' derives `step` from the resulting width - so the slider can never end up
+#' with min == max (and therefore step == 0), which `sliderInput()` rejects.
+#'
+#' @param row one row of `iniDf` (needs `est`, `lower`, `upper`)
+#' @return list(min=, max=, step=)
+#' @noRd
+.exploreSliderBounds <- function(row) {
+  # Rule-based bounds if missing or infinite
+  lower <- if (!is.na(row$lower) && is.finite(row$lower)) row$lower else row$est * 0.5
+  upper <- if (!is.na(row$upper) && is.finite(row$upper)) row$upper else row$est * 1.5
+
+  # Catch case where est = 0 (e.g., propSd)
+  if (row$est == 0) {
+    lower <- 0.01
+    upper <- 1
+  }
+
+  # Force fallback values if still invalid
+  if (!is.finite(lower) || !is.finite(upper) || lower >= upper) {
+    lower <- 0.1
+    upper <- 10
+  }
+  if (lower > row$est) lower <- row$est
+  if (upper < row$est) upper <- row$est
+
+  list(min = lower, max = upper, step = (upper - lower) / 100)
+}
+
 #--------------------------------------------------
 # 3. UI Module
 #--------------------------------------------------
@@ -108,28 +140,14 @@ expServer <- function(id, results) {
 
             if (is.null(row$est) || is.na(row$est)) return(NULL)  # skip if no initial value
 
-            # Rule-based bounds if missing or infinite
-            lower <- if (!is.na(row$lower) && is.finite(row$lower)) row$lower else row$est * 0.5
-            upper <- if (!is.na(row$upper) && is.finite(row$upper)) row$upper else row$est * 1.5
-
-            # Catch case where est = 0 (e.g., propSd)
-            if (row$est == 0) {
-              lower <- 0.01
-              upper <- 1
-            }
-
-            # Force fallback values if still invalid
-            if (!is.finite(lower) || !is.finite(upper) || lower >= upper) {
-              lower <- 0.1
-              upper <- 10
-            }
+            b <- .exploreSliderBounds(row)
             sliderInput(
               inputId = ns(paste0("slider_", row$name)),
               label = paste("Parameter:", row$name),
-              min = min(0.9 * row$est, 1.1 * row$est),
-              max = max(0.9 * row$est, 1.1 * row$est),
+              min = b$min,
+              max = b$max,
               value = row$est,
-              step = abs(0.01 * row$est)
+              step = b$step
             )
           })
 
@@ -168,6 +186,10 @@ expServer <- function(id, results) {
         # Save dataset
         selectedData(dataset)
 
+        output$dataPreview <- DT::renderDT({
+          DT::datatable(dataset, options = list(pageLength = 10))
+        })
+
         # Update pagination slider
         num_ids <- length(unique(dataset$ID))
         facets_per_page <- 4
@@ -198,27 +220,21 @@ expServer <- function(id, results) {
     output$dataPlot <- renderPlot({
       time <- DV <- id <- ipredSim <- NULL
       req(results$s)
-      print(results$s)
-      gg <- NULL
-      ## gg = ggplot(results$s, aes(x = time, y = DV)) +
-      ##   geom_point() +
-      ##   ggforce::facet_wrap_paginate(~id, ncol = 2, nrow = 2, page = input$page) +
-      ##   geom_line(aes(x = time, y = ipredSim)) +
-      ##   rxode2::rxTheme()
-     # gg = ggplot(results$s, aes(x = time, y = ipredSim )) +
-     #    geom_point(aes(x= time, y = DV), size = 3, alpha = 0.8) +
-     #    geom_line() +
-     #    facet_wrap_paginate(id, ncol = 2, nrow = 2, page = input$page) +
-     #    labs(
-     #      title = paste("Explore PK/PD Data - Page", input$page),
-     #      x = "Time",
-     #      y = "ipredSim",
-     #
-     #    ) +
-     #    theme_minimal() +
-     #    theme(plot.title = element_text(hjust = 0.5))
-     print(gg)
-     gg
+      .df <- as.data.frame(results$s)
+      validate(need(all(c("id", "time", "ipredSim", "DV") %in% names(.df)),
+                   "Model prediction does not have the expected columns (id, time, ipredSim, DV); this typically means the model has more than one endpoint, which Explore Data does not yet support."))
+
+      ggplot(.df, aes(x = time, y = ipredSim)) +
+        geom_line() +
+        geom_point(aes(x = time, y = DV), size = 2, alpha = 0.6) +
+        ggforce::facet_wrap_paginate(~id, ncol = 2, nrow = 2, page = input$page) +
+        labs(
+          title = paste("Explore PK/PD Data - Page", input$page),
+          x = "Time",
+          y = "Individual Prediction"
+        ) +
+        theme_minimal() +
+        theme(plot.title = element_text(hjust = 0.5))
     })
 
 

@@ -116,3 +116,93 @@ test_that("expServer: dataPlot silently stops when s is NULL (req behavior)", {
     expect_true(inherits(err, "shiny.silent.error") || is.null(err))
   })
 })
+
+test_that("expServer: loading data populates results$s and renders dataPlot", {
+  mod <- .make_pk_prop()
+  results <- shiny::reactiveValues(parEstim = mod, s = NULL)
+
+  testData <- data.frame(
+    ID    = c(1L, 1L, 1L, 2L, 2L, 2L),
+    TIME  = c(0, 1, 4, 0, 1, 4),
+    AMT   = c(100, 0, 0, 100, 0, 0),
+    EVID  = c(1L, 0L, 0L, 1L, 0L, 0L),
+    CMT   = c(1L, 0L, 0L, 1L, 0L, 0L),
+    DV    = c(NA, 50, 30, NA, 45, 28)
+  )
+  assign("nlmixr2shiny_plot_dataset", testData, envir = globalenv())
+  on.exit(rm("nlmixr2shiny_plot_dataset", envir = globalenv()))
+
+  shiny::testServer(nlmixr2shiny:::expServer, args = list(results = results), {
+    session$setInputs(dataset = "nlmixr2shiny_plot_dataset", page = 1)
+    session$setInputs(loadData = 1)
+    expect_false(is.null(results$s))
+    p <- output$dataPlot
+    expect_false(is.null(p))
+  })
+})
+
+test_that("expServer: loading a dataset also renders the dataPreview table", {
+  mod <- .make_pk_prop()
+  results <- shiny::reactiveValues(parEstim = mod, s = NULL)
+
+  testData <- data.frame(
+    ID    = c(1L, 1L, 1L, 2L, 2L, 2L),
+    TIME  = c(0, 1, 4, 0, 1, 4),
+    AMT   = c(100, 0, 0, 100, 0, 0),
+    EVID  = c(1L, 0L, 0L, 1L, 0L, 0L),
+    CMT   = c(1L, 0L, 0L, 1L, 0L, 0L),
+    DV    = c(NA, 50, 30, NA, 45, 28)
+  )
+  assign("nlmixr2shiny_preview_dataset", testData, envir = globalenv())
+  on.exit(rm("nlmixr2shiny_preview_dataset", envir = globalenv()))
+
+  shiny::testServer(nlmixr2shiny:::expServer, args = list(results = results), {
+    session$setInputs(dataset = "nlmixr2shiny_preview_dataset", page = 1)
+    session$setInputs(loadData = 1)
+    expect_false(is.null(output$dataPreview))
+  })
+})
+
+test_that("expServer: parameter sliders use the fallback bounds, not raw 0.9x/1.1x", {
+  # The slider previously computed safe fallback bounds (`lower`/`upper`) but
+  # never used them, building min/max from 0.9*est/1.1*est directly instead -
+  # which collapses to min==max==0 with step==0 when an estimate is 0 (e.g. a
+  # residual error fixed to 0 for testing). This confirms the fallback bounds
+  # are actually applied.
+  mod <- .make_pk_prop()
+  mod$iniDf$est[mod$iniDf$name == "prop.err"] <- 0
+  results <- shiny::reactiveValues(parEstim = mod, s = NULL)
+
+  testData <- data.frame(
+    ID    = c(1L, 1L, 1L),
+    TIME  = c(0, 1, 4),
+    AMT   = c(100, 0, 0),
+    EVID  = c(1L, 0L, 0L),
+    CMT   = c(1L, 0L, 0L),
+    DV    = c(NA, 50, 30)
+  )
+  assign("nlmixr2shiny_zero_est_dataset", testData, envir = globalenv())
+  on.exit(rm("nlmixr2shiny_zero_est_dataset", envir = globalenv()))
+
+  shiny::testServer(nlmixr2shiny:::expServer, args = list(results = results), {
+    session$setInputs(dataset = "nlmixr2shiny_zero_est_dataset", page = 1)
+    session$setInputs(loadData = 1)
+    expect_no_error(output$parameterSliders)
+  })
+})
+
+test_that(".exploreSliderBounds: falls back instead of collapsing to a 0-width slider", {
+  row <- data.frame(name = "prop.err", est = 0, lower = 0, upper = Inf)
+  b <- nlmixr2shiny:::.exploreSliderBounds(row)
+  expect_true(b$min < b$max)
+  expect_gt(b$step, 0)
+  expect_true(b$min <= row$est && row$est <= b$max)
+})
+
+test_that(".exploreSliderBounds: uses the model's own lower/upper when finite", {
+  row <- data.frame(name = "cl", est = 5, lower = 1, upper = 10)
+  b <- nlmixr2shiny:::.exploreSliderBounds(row)
+  expect_equal(b$min, 1)
+  expect_equal(b$max, 10)
+  expect_gt(b$step, 0)
+})

@@ -1,0 +1,4 @@
+plugins = ["r", "generic"]
+
+[sensors.lintr]
+files = ["**/*.R", "**/*.r"]

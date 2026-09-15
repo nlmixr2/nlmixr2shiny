@@ -98,7 +98,7 @@ test_that("log-likelihood", {
                     lik = list(df = data.frame(LL = "p2", row.names = "lik"),
                                resErrorModel = "",
                                transform = "Untransformed",
-                               distribution = "Log-likelihood"),
+                               distribution = "Generalized Log-Likelihood"),
                     `_modelPars` = NULL))
 
 })
@@ -192,7 +192,8 @@ test_that("t distribution", {
   expect_equal(residInfo(f),
                list(cp=list(df=data.frame(prop = "add.err", df = "nu",
                                           lambda = "lambda", row.names = "cp"),
-                            resErrorModel = "Proportional", transform = "Box-Cox", distribution = "T"),
+                            resErrorModel = "Proportional", transform = "Box-Cox",
+                            distribution = "t-distribution"),
                     `_modelPars` = NULL))
 
 })

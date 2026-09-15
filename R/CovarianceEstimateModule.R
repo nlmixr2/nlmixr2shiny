@@ -7,6 +7,14 @@ covUI <- function(id) {
   )
 }
 
+# Distributions offered by the "Distribution" picker.  These labels are the
+# ones `.residDistribution()` reports and `.toResidName()` understands.
+.residDistributionChoices <- c("Normal", "t-distribution", "Cauchy",
+                               "Poisson", "Binomial", "Beta", "Chi-Squared",
+                               "Geometric", "Uniform", "Weibull",
+                               "Negative Binomial", "Negative Binomial (mu)",
+                               "Generalized Log-Likelihood")
+
 # Define the Server logic for the covariance module
 covServer <- function(id, results) {
   moduleServer(id, function(input, output, session) {
@@ -25,8 +33,7 @@ covServer <- function(id, results) {
       .ri <- residInfo(results$parEstim)
       rinfo(.ri)
       results$rinfo <- .ri
-      .nri <- names(.ri)
-      .nri <- .nri[.nri != "_modelPars"]
+      .nri <- .residEndpoints(.ri)
 
       c(list(fluidRow(column(width=12, h4("Residual Errors")))),
         lapply(.nri, function(x) {
@@ -82,11 +89,12 @@ covServer <- function(id, results) {
               shinyWidgets::pickerInput(
                 inputId = ns(paste0("distribution_", x)),
                 label = "Distribution",
-                choices = c("Normal", "t-distribution", "Cauchy",
-                            "Poisson", "Binomial", "Beta", "Chi-Squared",
-                            "Geometric", "Uniform", "Weibull", "Negative Binomial",
-                            "Negative Binomial (mu)",
-                            "Generalized Log-Likelihood"),
+                choices = .residDistributionChoices,
+                # Without this the picker would come up as "Normal" no matter
+                # what the endpoint actually uses, and the observer below would
+                # then treat that as a user-requested change
+                selected = intersect(.ri[[x]]$distribution,
+                                     .residDistributionChoices),
                 options = shinyWidgets::pickerOptions(container = "body"),
                 width = "100%"
               )
@@ -123,7 +131,11 @@ covServer <- function(id, results) {
       .bsv <- input$betweenSubjectVaribility
       if (!all(.bsv %in% colnames(.df))) {
         .bsv <- dimnames(results$parEstim$omega)[[1]]
-        output$betweenSubjectVaribility <- .bsv
+        shinyWidgets::updateCheckboxGroupButtons(
+          session,
+          inputId = "betweenSubjectVaribility",
+          # character(0) clears the buttons; NULL would leave them alone
+          selected = if (is.null(.bsv)) character(0) else .bsv)
       }
       if (length(.bsv) == 0) {
         return(NULL)
@@ -151,31 +163,44 @@ covServer <- function(id, results) {
       results$triangleTable <- rhandsontable::hot_to_r(input$triangleTable)
     })
 
+    # Wire the residual error table and the residual pickers of an endpoint up
+    # exactly once.
+    #
+    # Both used to be (re)created inside an `observe()` that depended on the
+    # whole of `rinfo()`.  Every picker change therefore built a fresh
+    # generation of observers, each closing over the `rinfo()` value that was
+    # current when it was built, and each firing immediately on creation
+    # (`observeEvent()` does not ignore its init).  With more than one endpoint
+    # -- any PK/PD model -- the generations then wrote their stale copies over
+    # each other in turn and the tab never settled: the residual and omega
+    # tables stayed stuck "recalculating", so the residual parameter names were
+    # blank and pressing an eta button did nothing.
+    #
+    # Now the renderer depends on `rinfo()` reactively instead of capturing it,
+    # and the handlers read the current value when they run, so nothing has to
+    # be rebuilt when the residual specification changes.
+    .wired <- new.env(parent=emptyenv())
+
     observe({
       req(results$parEstim)
       req(rinfo())
-      .ri <- rinfo()
-      .nri <- names(.ri)
-      .nri <- .nri[.nri != "_modelPars"]
-
-      lapply(.nri, function(x) {
-        tableId <- paste0("resErrorEst_", x)
-        # Render the table with default data
-        output[[tableId]] <- rhandsontable::renderRHandsontable({
-          rhandsontable::rhandsontable(.ri[[x]]$df)
-        })
-      })
-    })
-    observe({
-      req(rinfo())  # Ensure endpointNames() is not NULL or empty
-      .ri <- rinfo()
-      .nri <- names(.ri)
-      .nri <- .nri[.nri != "_modelPars"]
-      .single <- length(.nri) == 1
-      lapply(.nri, function(x) {
+      lapply(.residEndpoints(rinfo()), function(x) {
+        if (exists(x, envir=.wired, inherits=FALSE)) {
+          return(NULL)
+        }
+        assign(x, TRUE, envir=.wired)
+        output[[paste0("resErrorEst_", x)]] <-
+          rhandsontable::renderRHandsontable({
+            .ri <- rinfo()
+            req(.ri[[x]])
+            rhandsontable::rhandsontable(.ri[[x]]$df)
+          })
         # Observe changes in the transform_ dropdown for each residual error model
         observeEvent(input[[paste0("transform_", x)]], {
           # Action to perform when the transform_ dropdown changes
+          .ri <- rinfo()
+          req(.ri[[x]])
+          .single <- length(.residEndpoints(.ri)) == 1
           newTransform <- input[[paste0("transform_", x)]]
           if (.ri[[x]]$transform == newTransform) {
             return()
@@ -193,12 +218,20 @@ covServer <- function(id, results) {
             .ri[[x]]$df <- .dfNew
             rinfo(.ri)
             results$rinfo <- .ri
-
           }
         })
         observeEvent(input[[paste0("distribution_", x)]], {
+          .ri <- rinfo()
+          req(.ri[[x]])
+          .single <- length(.residEndpoints(.ri)) == 1
           newDist <- input[[paste0("distribution_", x)]]
           if (.ri[[x]]$distribution == newDist) {
+            return()
+          }
+          if (!(.ri[[x]]$distribution %in% .residDistributionChoices)) {
+            # The model uses a distribution this picker cannot represent, so
+            # the picker fell back to its first choice; leave the model alone
+            # rather than silently rewriting it.
             return()
           }
           if (.ri[[x]]$distribution %in% c("Normal", "t-distribution", "Cauchy") &&
@@ -230,8 +263,14 @@ covServer <- function(id, results) {
           results$rinfo <- .ri
         })
         observeEvent(input[[paste0("resErrorModel_", x)]],{
+          .ri <- rinfo()
+          req(.ri[[x]])
+          .single <- length(.residEndpoints(.ri)) == 1
           newRes <- input[[paste0("resErrorModel_", x)]]
           curDist <- input[[paste0("distribution_", x)]]
+          if (.ri[[x]]$resErrorModel == newRes) {
+            return()
+          }
           if (!(curDist %in% c("Normal", "t-distribution", "Cauchy"))) {
             shinyWidgets::updatePickerInput(session,
                                             inputId = paste0("resErrorModel_", x),
@@ -264,10 +303,8 @@ covServer <- function(id, results) {
             return()
           }
         })
+        NULL
       })
-
-
     })
-
   })
 }
