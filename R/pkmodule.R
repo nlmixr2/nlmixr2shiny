@@ -4,6 +4,8 @@
 
 .pkmodlib <- function()  {
   if(is.null(.modellib$modeldb)) {
+    # the exported dataset is the same object nlmixr2lib writes to its
+    # inst/ copy, so read it directly instead of a serialized file
     .modellib$modeldb <- nlmixr2lib::modeldb
   }
   .modellib$modeldb
