@@ -62,8 +62,14 @@ PKph <- function(absorption_method,
 
   # a second absorption path fans one dose record out to depot + depot2
   # with a logit F1 split (nlmixr2lib#526); it composes with any
-  # single-path absorption above except a removed depot
+  # single-path absorption above except a removed depot.  Shiny inputs
+  # are NULL before the conditional panels first render, so fall back
+  # to the defaults rather than emitting invalid syntax (e.g. f1 = ).
   if (isTRUE(double_absorption) && absorption_method != "IV/Infusion/Bolus") {
+    if (is.null(da_type)) da_type <- "first"
+    if (is.null(da_delay)) da_delay <- "none"
+    if (is.null(da_n)) da_n <- 3
+    if (is.null(da_f1)) da_f1 <- 0.7
     da_type <- match.arg(da_type, c("first", "zero"))
     da_delay <- match.arg(da_delay, c("none", "lag", "transit"))
     da_call <- paste0("addSecondAbsorption(type = \"", da_type,
