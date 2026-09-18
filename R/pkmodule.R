@@ -4,7 +4,7 @@
 
 .pkmodlib <- function()  {
   if(is.null(.modellib$modeldb)) {
-    .modellib$modeldb <- qs2::qs_read(system.file("modeldb.qs2", package="nlmixr2lib"))
+    .modellib$modeldb <- nlmixr2lib::modeldb
   }
   .modellib$modeldb
 }
@@ -72,12 +72,33 @@ pkServer <- function(id, results) {
               column(3,
                      selectInput(ns("absorption_method"),
                                  "Absorption Method",
-                                 choices = c("IV/Infusion/Bolus", "First Order", "Transit", "Weibull"), selectize = FALSE, size = 4),
+                                 choices = c("IV/Infusion/Bolus", "First Order", "Zero Order", "Transit", "Weibull"), selectize = FALSE, size = 5),
                      conditionalPanel(
                        condition = paste0("input['", ns("absorption_method"), "'] == 'Transit'"),
                        sliderInput(ns("transit_compartment"),
                                    "Number of Transit Compartments",
                                    min = 1, max = 50, value = 1)
+                     ),
+                     shinyWidgets::materialSwitch(ns("double_absorption"),
+                                                  label = "Double absorption (second path)",
+                                                  value = FALSE),
+                     conditionalPanel(
+                       condition = paste0("input['", ns("double_absorption"), "'] && input['", ns("absorption_method"), "'] != 'IV/Infusion/Bolus'"),
+                       selectInput(ns("da_type"), "Second path input",
+                                   choices = c("First Order" = "first", "Zero Order" = "zero"),
+                                   selectize = FALSE, size = 2),
+                       selectInput(ns("da_delay"), "Second path delay",
+                                   choices = c("None" = "none", "Lag" = "lag", "Transit" = "transit"),
+                                   selectize = FALSE, size = 3),
+                       conditionalPanel(
+                         condition = paste0("input['", ns("da_delay"), "'] == 'transit'"),
+                         sliderInput(ns("da_n"),
+                                     "Second path transit compartments",
+                                     min = 1, max = 50, value = 3)
+                       ),
+                       sliderInput(ns("da_f1"),
+                                   "Fraction to first path (F1)",
+                                   min = 0.01, max = 0.99, value = 0.7, step = 0.01)
                      )
                      ),
               column(3,
@@ -217,6 +238,11 @@ pkServer <- function(id, results) {
       results$parameterization <- input$parameterization
       results$pk_switch <- input$pk_switch
       results$pd_switch <- input$pd_switch
+      results$double_absorption <- isTRUE(input$double_absorption)
+      results$da_type <- input$da_type
+      results$da_delay <- input$da_delay
+      results$da_n <- input$da_n
+      results$da_f1 <- input$da_f1
       req(input$absorption_method)
       if (input$absorption_method == "Transit") {
         results$transit_compartment <- input$transit_compartment
@@ -244,7 +270,12 @@ pkServer <- function(id, results) {
         absorption_method = results$absorption_method,
         distribution_model = results$distribution_model,
         elimination_method = results$elimination_method,
-        parameterization = results$parameterization
+        parameterization = results$parameterization,
+        double_absorption = isTRUE(results$double_absorption),
+        da_type = results$da_type,
+        da_delay = results$da_delay,
+        da_n = results$da_n,
+        da_f1 = results$da_f1
       )
       if (results$absorption_method == "Transit") {
         pk_values$transit_compartment <- results$transit_compartment

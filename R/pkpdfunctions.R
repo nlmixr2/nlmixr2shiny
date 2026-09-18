@@ -2,7 +2,12 @@ PKph <- function(absorption_method,
                  distribution_model,
                  elimination_method,
                  parameterization,
-                 transit_compartment = NULL) {
+                 transit_compartment = NULL,
+                 double_absorption = FALSE,
+                 da_type = "first",
+                 da_delay = "none",
+                 da_n = 3,
+                 da_f1 = 0.7) {
   parme <- ""
   if(length(parameterization)==1){
     if(distribution_model=="1 compartment" && length(distribution_model)==1){
@@ -47,10 +52,28 @@ PKph <- function(absorption_method,
   }else if(absorption_method=="IV/Infusion/Bolus"){
 
     tran <- "removeDepot()"
+  } else if(absorption_method=="Zero Order"){
+
+    tran <- "addZeroOrderAbs()"
   } else{
     tran <- "addWeibullAbs()"
   }
   pkpipe <- c(pkpipe, tran)
+
+  # a second absorption path fans one dose record out to depot + depot2
+  # with a logit F1 split (nlmixr2lib#526); it composes with any
+  # single-path absorption above except a removed depot
+  if (isTRUE(double_absorption) && absorption_method != "IV/Infusion/Bolus") {
+    da_type <- match.arg(da_type, c("first", "zero"))
+    da_delay <- match.arg(da_delay, c("none", "lag", "transit"))
+    da_call <- paste0("addSecondAbsorption(type = \"", da_type,
+      "\", delay = \"", da_delay, "\"")
+    if (da_delay == "transit") {
+      da_call <- paste0(da_call, ", n = ", as.integer(da_n))
+    }
+    da_call <- paste0(da_call, ", f1 = ", da_f1, ")")
+    pkpipe <- c(pkpipe, da_call)
+  }
 
   pkpipe <- pkpipe[pkpipe != ""]
   pkpipe <- paste(pkpipe, collapse="|>\n\t")
