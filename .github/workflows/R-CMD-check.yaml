@@ -36,9 +36,13 @@ jobs:
 
       - uses: r-lib/actions/setup-r@v2
         with:
+          # nlmixr2lib main requires rxode2 (>= 5.1.8), which is
+          # r-universe-only until it reaches CRAN/RSPM (same reason as
+          # nlmixr2lib's own workflows); this repository is load-bearing
+          extra-repositories: https://nlmixr2.r-universe.dev
+          use-public-rspm: true
           r-version: ${{ matrix.config.r }}
           http-user-agent: ${{ matrix.config.http-user-agent }}
-          use-public-rspm: true
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
