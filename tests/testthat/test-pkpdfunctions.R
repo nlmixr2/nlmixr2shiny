@@ -243,3 +243,78 @@ test_that("jPh: validates inputs are character", {
 test_that("jPh: validates single character inputs", {
   expect_error(nlmixr2shiny:::jPh(c("a", "b"), "c"))
 })
+
+test_that("PKph: Zero Order absorption", {
+  result <- nlmixr2shiny:::PKph("Zero Order", "1 compartment", "Linear", "Cl/V")
+  expect_true(grepl("addZeroOrderAbs", result))
+  expect_true(grepl("PK_1cmt_des", result))
+})
+
+test_that("PKph: double absorption appends addSecondAbsorption", {
+  result <- nlmixr2shiny:::PKph("First Order", "1 compartment", "Linear", "Cl/V",
+                                double_absorption = TRUE)
+  expect_true(grepl('addSecondAbsorption\\(type = "first", delay = "none", f1 = 0.7\\)', result))
+  expect_true(grepl("PK_1cmt_des", result))
+})
+
+test_that("PKph: double absorption with lag and transit options", {
+  resLag <- nlmixr2shiny:::PKph("First Order", "1 compartment", "Linear", "Cl/V",
+                                double_absorption = TRUE, da_delay = "lag")
+  expect_true(grepl('delay = "lag"', resLag))
+
+  resTransit <- nlmixr2shiny:::PKph("First Order", "1 compartment", "Linear", "Cl/V",
+                                    double_absorption = TRUE, da_delay = "transit",
+                                    da_n = 4)
+  expect_true(grepl('delay = "transit", n = 4', resTransit))
+
+  resZero <- nlmixr2shiny:::PKph("First Order", "1 compartment", "Linear", "Cl/V",
+                                 double_absorption = TRUE, da_type = "zero")
+  expect_true(grepl('type = "zero"', resZero))
+})
+
+test_that("PKph: double absorption off by default and refused for IV", {
+  resOff <- nlmixr2shiny:::PKph("First Order", "1 compartment", "Linear", "Cl/V")
+  expect_false(grepl("addSecondAbsorption", resOff))
+
+  resIV <- nlmixr2shiny:::PKph("IV/Infusion/Bolus", "1 compartment", "Linear", "Cl/V",
+                               double_absorption = TRUE)
+  expect_true(grepl("removeDepot", resIV))
+  expect_false(grepl("addSecondAbsorption", resIV))
+})
+
+test_that("PKph: double absorption pipe string evaluates to a model", {
+  pipe <- nlmixr2shiny:::PKph("First Order", "1 compartment", "Linear", "Cl/V",
+                              double_absorption = TRUE, da_delay = "lag")
+  mod <- eval(str2lang(pipe))
+  expect_s3_class(mod, "rxUi")
+  expect_true("depot2" %in% rxode2::rxModelVars(mod)$state)
+})
+
+test_that("PKph: NULL DA inputs fall back to defaults (pre-render)", {
+  # Shiny conditional-panel inputs are NULL before first render; the
+  # pipe must still be valid and evaluate
+  result <- nlmixr2shiny:::PKph("First Order", "1 compartment", "Linear", "Cl/V",
+                                double_absorption = TRUE, da_type = NULL,
+                                da_delay = NULL, da_n = NULL, da_f1 = NULL)
+  expect_true(grepl('addSecondAbsorption\\(type = "first", delay = "none", f1 = 0.7\\)', result))
+  mod <- eval(str2lang(result))
+  expect_s3_class(mod, "rxUi")
+  expect_true("depot2" %in% rxode2::rxModelVars(mod)$state)
+})
+
+test_that("PKph: Zero Order pipe string evaluates to a model", {
+  pipe <- nlmixr2shiny:::PKph("Zero Order", "1 compartment", "Linear", "Cl/V")
+  mod <- eval(str2lang(pipe))
+  expect_s3_class(mod, "rxUi")
+  expect_false("depot" %in% rxode2::rxModelVars(mod)$state)
+  expect_true("tk0" %in% names(rxode2::rxModelVars(mod)$lhs) ||
+    "ltk0" %in% mod$iniDf$name)
+})
+
+test_that(".pkmodlib loads the model database without qs2", {
+  lib <- nlmixr2shiny:::.pkmodlib()
+  expect_s3_class(lib, "data.frame")
+  expect_true(all(c("name", "description") %in% names(lib)))
+  expect_true(nrow(lib) > 0)
+  expect_identical(lib, nlmixr2lib::modeldb)
+})
