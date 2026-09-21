@@ -19,7 +19,8 @@ Encoding: UTF-8
 LazyData: true
 Depends:
     nlmixr2lib (>= 0.3.2.9000),
-    nlmixr2data
+    nlmixr2data,
+    rxode2 (>= 5.1.7)
 Imports:
     rstudioapi,
     xgxr,
