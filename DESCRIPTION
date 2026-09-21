@@ -47,3 +47,5 @@ Suggests:
     nonmem2rx,
     monolix2rx,
     campsismod (>= 1.4.0)
+Remotes:
+    nlmixr2lib = nlmixr2/nlmixr2lib
